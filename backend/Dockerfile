@@ -7,9 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Copy requirements and source
 COPY pyproject.toml ./
-RUN pip install --user --no-cache-dir -e .
+COPY app/ ./app/
+RUN pip install --user --no-cache-dir -e ".[dev]"
 
 # Runtime stage
 FROM python:3.12-slim
