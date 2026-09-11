@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wolfiero"
+version = "0.1.0"
+description = "Market intelligence agent for swing trading"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy[asyncio]>=2.0.23",
+    "alembic>=1.13.1",
+    "asyncpg>=0.29.0",
+    "pydantic-settings>=2.1.0",
+    "pydantic[email]>=2.5.0",
+    "httpx>=0.25.2",
+    "pandas>=2.1.3",
+    "numpy>=1.26.2",
+    "pandas-ta>=0.3.14b0",
+    "pandas_market_calendars>=4.2.0",
+    "structlog>=23.2.0",
+    "python-telegram-bot>=20.4",
+    "apscheduler>=3.10.4",
+    "python-dateutil>=2.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.23.2",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.8",
+    "mypy>=1.7.1",
+    "freezegun>=1.4.0",
+    "respx>=0.21.1",
+    "responses>=0.24.1",
+    "testcontainers[postgres]>=3.7.0",
+    "black>=23.12.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["app"]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "C4", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = false
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["pandas_ta", "pandas_market_calendars"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+omit = ["*/tests/*", "*/migrations/*", "*/migrations.py"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

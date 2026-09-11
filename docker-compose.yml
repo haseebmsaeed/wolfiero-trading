@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-wolfiero}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-wolfiero}
+      POSTGRES_DB: ${DB_NAME:-wolfiero}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-wolfiero} -d ${DB_NAME:-wolfiero}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - wolfiero
+    restart: unless-stopped
+
+  wolfiero-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-wolfiero}:${DB_PASSWORD:-wolfiero}@postgres:5432/${DB_NAME:-wolfiero}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+      # Add more env vars as needed
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # For development: bind mount the app source
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+    networks:
+      - wolfiero
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  wolfiero:
+    driver: bridge
