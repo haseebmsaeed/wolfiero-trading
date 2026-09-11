@@ -14,9 +14,9 @@ from app.providers.market_data import (
     DataQualityError,
     Interval,
     MarketDataProvider,
-    OHLCVFrame,
     SymbolNotFoundError,
 )
+from app.schemas.market_data import OHLCVFrame
 
 logger = get_logger(__name__)
 
