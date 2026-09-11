@@ -7,6 +7,7 @@ from typing import Sequence
 from app.schemas.market_data import (
     EarningsEvent,
     Fundamentals,
+    OHLCVBar,
     OHLCVFrame,
     ProviderHealth,
     Quote,
