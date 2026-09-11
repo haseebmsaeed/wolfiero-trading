@@ -1,11 +1,17 @@
 """FastAPI application factory and entry point."""
 
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
+from app.logging import get_logger, set_request_id, setup_logging
+
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -13,13 +19,18 @@ async def lifespan(app: FastAPI):  # type: ignore
     """Application lifespan — startup and shutdown events."""
     # Startup
     settings = get_settings()
+    setup_logging(settings.log_level)
     settings.validate_strategy_weights()
-    print(f"✓ Application started (env={settings.environment}, strategy={settings.strategy_version})")
+    logger.info(
+        "application_started",
+        environment=settings.environment,
+        strategy_version=settings.strategy_version,
+    )
 
     yield
 
     # Shutdown
-    print("✓ Application shutdown")
+    logger.info("application_shutdown")
 
 
 def create_app() -> FastAPI:
@@ -32,6 +43,51 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    # Add CORS middleware (restrictive for production)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"] if settings.environment == "development" else [],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Middleware: correlation ID injection and request logging
+    @app.middleware("http")
+    async def correlation_id_middleware(request: Request, call_next):  # type: ignore
+        """Add correlation ID to all requests and log them."""
+        # Get or create request ID
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        set_request_id(request_id)
+        request.state.request_id = request_id
+
+        # Log request
+        start_time = time.time()
+        logger.info(
+            "request_started",
+            method=request.method,
+            path=request.url.path,
+            request_id=request_id,
+        )
+
+        # Call next middleware/handler
+        response = await call_next(request)
+
+        # Log response
+        duration_ms = (time.time() - start_time) * 1000
+        logger.info(
+            "request_completed",
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration_ms=round(duration_ms, 2),
+            request_id=request_id,
+        )
+
+        # Add request ID to response headers
+        response.headers["X-Request-ID"] = request_id
+        return response
 
     # Health endpoints
     @app.get("/health")
@@ -50,8 +106,15 @@ def create_app() -> FastAPI:
 
     # Error handler
     @app.exception_handler(Exception)
-    async def generic_exception_handler(request, exc):  # type: ignore
+    async def generic_exception_handler(request: Request, exc: Exception):  # type: ignore
         """Global exception handler returning standard error envelope."""
+        request_id = getattr(request.state, "request_id", None)
+        logger.error(
+            "unhandled_exception",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            request_id=request_id,
+        )
         return JSONResponse(
             status_code=500,
             content={
@@ -59,7 +122,7 @@ def create_app() -> FastAPI:
                     "code": "INTERNAL_ERROR",
                     "message": "An unexpected error occurred",
                     "detail": str(exc) if settings.environment == "development" else None,
-                    "request_id": getattr(request.state, "request_id", None),
+                    "request_id": request_id,
                 }
             },
         )
