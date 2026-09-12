@@ -1,0 +1,67 @@
+# OpenClaw Agent Runtime Configuration
+# Model routing, tool discovery, and conversation persistence
+
+runtime:
+  name: wolfiero-trading-agent
+  version: 1.0.0
+  environment: ${ENVIRONMENT:development}
+
+models:
+  # Three-tier model strategy: cheap for exploration, mid for analysis, strong for complex reasoning
+  cheap:
+    provider: ${AI_PROVIDER:anthropic}
+    model: ${AI_MODEL_CHEAP:claude-haiku-4-5-20251001}
+    context_window: 4096
+    use_for: quick_lookups, tool_selection_verification
+
+  mid:
+    provider: ${AI_PROVIDER:anthropic}
+    model: ${AI_MODEL_MID:claude-opus-5}
+    context_window: 200000
+    use_for: stock_analysis, interpretation, conversation
+
+  strong:
+    provider: ${AI_PROVIDER:anthropic}
+    model: ${AI_MODEL_STRONG:claude-opus-5}
+    context_window: 200000
+    use_for: complex_reasoning, grounding_validation, error_recovery
+
+api:
+  # Internal API connection (within docker network)
+  base_url: ${WOLFIERO_API_URL:http://wolfiero-api:8000}
+  api_key: ${WOLFIERO_API_KEY:dev-key}
+  request_timeout_seconds: 30
+  retry_count: 1
+  retry_backoff_seconds: 2
+
+tools:
+  discovery_url: ${WOLFIERO_API_URL:http://wolfiero-api:8000}/openapi.json
+  # Tools are auto-discovered from API schema; allow-list here for safety
+  allowed_tools:
+    - analyze_stock
+    - get_stock_history
+    # More added as epics progress (scan_market, get_news, etc.)
+
+conversation:
+  # Persistence for chat history
+  storage: database
+  max_history_turns: 50
+  max_context_tokens: 150000  # Leave buffer below context window
+
+monitoring:
+  log_level: ${LOG_LEVEL:INFO}
+  log_tool_calls: true
+  log_model_calls: true
+  trace_grounding_violations: true
+
+  # Expose metrics on health endpoint
+  metrics:
+    - model_calls_by_tier
+    - tool_calls_by_endpoint
+    - grounding_violations_daily
+    - token_usage_by_turn
+
+budget:
+  monthly_usd: ${AI_MONTHLY_BUDGET_USD:100}
+  warn_at_pct: 70
+  block_at_pct: 95

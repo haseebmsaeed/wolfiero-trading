@@ -51,6 +51,38 @@ services:
       retries: 3
       start_period: 30s
 
+  openclaw-agent:
+    build:
+      context: ./openclaw
+      dockerfile: Dockerfile
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      WOLFIERO_API_URL: http://wolfiero-api:8000
+      WOLFIERO_API_KEY: ${WOLFIERO_API_KEY:-dev-key}
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL_CHEAP: ${AI_MODEL_CHEAP:-claude-haiku-4-5-20251001}
+      AI_MODEL_MID: ${AI_MODEL_MID:-claude-opus-5}
+      AI_MODEL_STRONG: ${AI_MODEL_STRONG:-claude-opus-5}
+      PYTHONUNBUFFERED: "1"
+    # Port 8001 not exposed to host (internal only)
+    depends_on:
+      wolfiero-api:
+        condition: service_healthy
+    volumes:
+      - ./openclaw/config:/app/config
+      - ./openclaw/agent:/app/agent
+    networks:
+      - wolfiero
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
 volumes:
   postgres_data:
     driver: local
