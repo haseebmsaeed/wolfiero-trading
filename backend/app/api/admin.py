@@ -3,9 +3,8 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.api.deps import get_universe_service
 from app.services.universe import UniverseService
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -14,7 +13,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 @router.post("/universe/refresh")
 async def refresh_universe(
     trade_date: date | None = None,
-    db: AsyncSession = Depends(get_db),
+    universe: UniverseService = Depends(get_universe_service),
 ):
     """Manually trigger universe refresh.
 
@@ -24,10 +23,8 @@ async def refresh_universe(
     Returns:
         Refresh result with entered/exited counts
     """
-    universe_service = UniverseService(db)
-
     try:
-        result = await universe_service.refresh_universe(trade_date)
+        result = await universe.refresh_universe(trade_date)
         return {
             "status": "success",
             "data": result,
@@ -40,17 +37,15 @@ async def refresh_universe(
 
 @router.get("/universe/stats")
 async def get_universe_stats(
-    db: AsyncSession = Depends(get_db),
+    universe: UniverseService = Depends(get_universe_service),
 ):
     """Get current universe statistics.
 
     Returns:
         Universe size and sector breakdown
     """
-    universe_service = UniverseService(db)
-
     try:
-        stats = await universe_service.get_universe_stats()
+        stats = await universe.get_universe_stats()
         return {
             "status": "success",
             "data": stats,

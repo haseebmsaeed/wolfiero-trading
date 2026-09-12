@@ -2,15 +2,12 @@
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.db.session import get_db
-from app.services.scanner import ScannerService
-from app.services.market_data import MarketDataService
-from app.providers.market_data import get_provider_factory
+from app.api.deps import get_scanner_service
 from app.config import get_settings
 from app.logging import get_logger
+from app.services.scanner import ScannerService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/scanner", tags=["scanner"])
@@ -19,8 +16,7 @@ router = APIRouter(prefix="/api/scanner", tags=["scanner"])
 @router.post("/run")
 async def run_scan(
     trade_date: date | None = None,
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-    db: AsyncSession = Depends(get_db),
+    scanner: ScannerService = Depends(get_scanner_service),
 ):
     """Trigger a market scan for a specific date.
 
@@ -34,12 +30,8 @@ async def run_scan(
     if trade_date is None:
         trade_date = date.today()
 
-    provider_factory = get_provider_factory(settings.market_data_provider)
-    market_data_service = MarketDataService(provider_factory, db)
-    scanner_service = ScannerService(db, market_data_service)
-
     try:
-        result = await scanner_service.scan(
+        result = await scanner.scan(
             trade_date=trade_date,
             strategy_version=settings.strategy_version,
             force=False,
@@ -57,16 +49,11 @@ async def run_scan(
 @router.get("/runs/{run_id}")
 async def get_scan_run(
     run_id: str,
-    db: AsyncSession = Depends(get_db),
+    scanner: ScannerService = Depends(get_scanner_service),
 ):
     """Get details of a scan run."""
-    settings = get_settings()
-    provider_factory = get_provider_factory(settings.market_data_provider)
-    market_data_service = MarketDataService(provider_factory, db)
-    scanner_service = ScannerService(db, market_data_service)
-
     try:
-        result = await scanner_service.get_scan_run(run_id)
+        result = await scanner.get_scan_run(run_id)
         if not result:
             raise HTTPException(status_code=404, detail="Scan run not found")
         return {
@@ -85,7 +72,7 @@ async def get_candidates(
     date_param: date | None = None,
     limit: int = 20,
     include_vetoed: bool = False,
-    db: AsyncSession = Depends(get_db),
+    scanner: ScannerService = Depends(get_scanner_service),
 ):
     """Get ranked candidates from the latest scan.
 
@@ -100,13 +87,8 @@ async def get_candidates(
     if date_param is None:
         date_param = date.today()
 
-    settings = get_settings()
-    provider_factory = get_provider_factory(settings.market_data_provider)
-    market_data_service = MarketDataService(provider_factory, db)
-    scanner_service = ScannerService(db, market_data_service)
-
     try:
-        candidates = await scanner_service.get_candidates(
+        candidates = await scanner.get_candidates(
             trade_date=date_param,
             limit=limit,
             include_vetoed=include_vetoed,
