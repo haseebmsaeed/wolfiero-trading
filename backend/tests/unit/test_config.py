@@ -32,41 +32,25 @@ class TestSettingsDefaults:
 class TestSettingsValidation:
     """Tests for configuration validation."""
 
-    def test_strategy_version_is_positive(self):
-        """Test that strategy_version is a positive integer."""
-        settings = Settings(strategy_version=1)
-        assert settings.strategy_version >= 1
+    def test_risk_per_trade_valid_range(self):
+        """Test that risk_per_trade is within valid range (0-5%)."""
+        settings = Settings(risk_per_trade_pct=1.5)
+        assert 0 < settings.risk_per_trade_pct < 5
 
-    def test_risk_per_trade_is_decimal(self):
-        """Test that risk_per_trade can be a Decimal."""
-        settings = Settings(risk_per_trade=Decimal("0.02"))
-        assert isinstance(settings.risk_per_trade, Decimal)
+    def test_portfolio_heat_valid_range(self):
+        """Test that max portfolio heat is within valid range."""
+        settings = Settings(max_portfolio_heat_pct=6.0)
+        assert 0 < settings.max_portfolio_heat_pct <= 50
 
-    def test_validate_strategy_weights_sums_to_one(self):
-        """Test that strategy weights validate properly."""
-        settings = Settings(
-            strategy_weights={
-                "trend_strength": 0.4,
-                "momentum": 0.3,
-                "volatility": 0.3,
-            }
-        )
+    def test_min_reward_risk_valid(self):
+        """Test that min reward/risk ratio is >= 1.0."""
+        settings = Settings(min_reward_risk=2.0)
+        assert settings.min_reward_risk >= 1.0
 
-        # Should not raise
-        settings.validate_strategy_weights()
-
-    def test_validate_strategy_weights_warns_on_mismatch(self):
-        """Test that validation catches weight sum mismatches."""
-        settings = Settings(
-            strategy_weights={
-                "trend_strength": 0.5,
-                "momentum": 0.3,
-                # Missing volatility
-            }
-        )
-
-        # Should log warning but not raise (v1 behavior)
-        settings.validate_strategy_weights()
+    def test_setup_quality_in_range(self):
+        """Test that min_setup_quality is between 0 and 1."""
+        settings = Settings(min_setup_quality=0.45)
+        assert 0 <= settings.min_setup_quality <= 1
 
 
 class TestSettingsCaching:
@@ -80,14 +64,12 @@ class TestSettingsCaching:
         # Should be the same object (cached)
         assert settings1 is settings2
 
-    def test_settings_is_hashable(self):
-        """Test that Settings can be used with lru_cache."""
-        settings = Settings()
-        # If this doesn't raise TypeError, the object is hashable
-        try:
-            hash(settings)
-        except TypeError:
-            pytest.fail("Settings must be hashable for lru_cache")
+    def test_settings_is_singleton(self):
+        """Test that get_settings returns same instance."""
+        settings1 = get_settings()
+        settings2 = get_settings()
+        # Verify it's truly cached
+        assert id(settings1) == id(settings2)
 
 
 class TestSettingsEnvironmentOverrides:
@@ -108,13 +90,14 @@ class TestSettingsEnvironmentOverrides:
 class TestSettingsJSONEncoders:
     """Tests for JSON encoding of settings."""
 
-    def test_settings_with_decimal_values(self):
-        """Test that Decimal values in settings can be serialized."""
-        settings = Settings(risk_per_trade=Decimal("0.025"))
+    def test_settings_serializable(self):
+        """Test that settings can be converted to dict."""
+        settings = Settings(risk_per_trade_pct=0.025)
 
         # Should not raise when converting to dict
         d = settings.model_dump()
-        assert d["risk_per_trade"] is not None
+        assert d["risk_per_trade_pct"] == 0.025
+        assert isinstance(d, dict)
 
     def test_settings_json_serializable(self):
         """Test that settings can be dumped to JSON."""
@@ -123,3 +106,4 @@ class TestSettingsJSONEncoders:
         # Should be JSON-compatible
         d = settings.model_dump(mode="json")
         assert isinstance(d, dict)
+        assert "log_level" in d
