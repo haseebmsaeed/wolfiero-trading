@@ -10,9 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.104.1",
     "uvicorn[standard]>=0.24.0",
-    "sqlalchemy[asyncio]>=2.0.23",
-    "alembic>=1.13.1",
-    "asyncpg>=0.29.0",
+    "google-cloud-firestore>=2.16.0",
     "pydantic-settings>=2.1.0",
     "pydantic[email]>=2.5.0",
     "httpx>=0.25.2",
@@ -37,7 +35,7 @@ dev = [
     "freezegun>=1.4.0",
     "respx>=0.21.1",
     "responses>=0.24.1",
-    "testcontainers[postgres]>=3.7.0",
+    "testcontainers>=3.7.0",
     "black>=23.12.0",
 ]
 
