@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import stocks
+from app.api import stocks, admin
 from app.config import get_settings
 from app.logging import get_logger, set_request_id, setup_logging
 
@@ -105,6 +105,7 @@ def create_app() -> FastAPI:
 
     # Mount routers
     app.include_router(stocks.router)
+    app.include_router(admin.router)
 
     # Error handler
     @app.exception_handler(Exception)
