@@ -12,11 +12,11 @@ class CandidateRepository:
         self.db = db
         self.scan_runs_collection = db.collection("scan_runs")
 
-    def _subcollection_ref(self, run_id: str):
+    def _subcollection_ref(self, run_id: str) -> object:
         """Return the candidates subcollection reference for a run."""
         return self.scan_runs_collection.document(run_id).collection("candidates")
 
-    async def create_many(self, run_id: str, candidates: list[dict]) -> None:
+    async def create_many(self, run_id: str, candidates: list[dict[str, object]]) -> None:
         """Create multiple candidate records for a run.
 
         Uses .create() semantics (fails on duplicate) to enforce immutability.
@@ -33,19 +33,20 @@ class CandidateRepository:
 
         await batch.commit()
 
-    async def get(self, run_id: str, symbol: str) -> dict | None:
+    async def get(self, run_id: str, symbol: str) -> dict[str, object] | None:
         """Get a single candidate by run_id and symbol."""
         doc = await self._subcollection_ref(run_id).document(symbol).get()
         if doc.exists:
             data = doc.to_dict()
-            data["run_id"] = run_id
-            data["symbol"] = symbol
-            return data
+            if data:
+                data["run_id"] = run_id
+                data["symbol"] = symbol
+                return data
         return None
 
     async def list_by_run(
         self, run_id: str, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         """List candidates for a run, optionally filtering vetoed status."""
         query = self._subcollection_ref(run_id)
         if not include_vetoed:
@@ -53,20 +54,21 @@ class CandidateRepository:
         query = query.order_by("rank")
         query = query.limit(limit)
 
-        docs = await query.stream()
-        results = []
+        docs = query.stream()
+        results: list[dict[str, object]] = []
         async for doc in docs:
             data = doc.to_dict()
-            data["run_id"] = run_id
-            data["symbol"] = doc.id
-            results.append(data)
+            if data:
+                data["run_id"] = run_id
+                data["symbol"] = doc.id
+                results.append(data)
         return results
 
     async def list_by_date(
         self, trade_date: date, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         """List candidates for a trade date (searches all runs on that date)."""
-        scan_runs = await self.scan_runs_collection.where(
+        scan_runs = self.scan_runs_collection.where(
             "trade_date", "==", trade_date
         ).stream()
 

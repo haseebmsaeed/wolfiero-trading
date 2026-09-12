@@ -13,7 +13,7 @@ class PriceHistoryRepository:
         self.db = db
         self.stocks_collection = db.collection("stocks")
 
-    def _subcollection_ref(self, symbol: str):
+    def _subcollection_ref(self, symbol: str) -> object:
         """Return the price_history subcollection reference for a symbol."""
         return self.stocks_collection.document(symbol).collection("price_history")
 
@@ -28,9 +28,9 @@ class PriceHistoryRepository:
             query = query.where("trade_date", "<=", end_date)
 
         query = query.order_by("trade_date")
-        docs = await query.stream()
+        docs = query.stream()
 
-        records = []
+        records: list[dict[str, object]] = []
         async for doc in docs:
             data = doc.to_dict()
             data["trade_date"] = doc.id  # Doc ID is the trade_date as a date string
@@ -68,12 +68,12 @@ class PriceHistoryRepository:
 
     async def count(self, symbol: str) -> int:
         """Count total bars for a symbol."""
-        aggregate_query = await self._subcollection_ref(symbol).count().get()
-        return aggregate_query[0][0].value
+        aggregate_query = await self._subcollection_ref(symbol).count().get()  # type: ignore
+        return int(aggregate_query[0][0].value)  # type: ignore
 
     async def latest_date(self, symbol: str) -> date | None:
         """Get the most recent trade_date for a symbol."""
-        docs = await self._subcollection_ref(symbol).order_by("trade_date", direction="DESCENDING").limit(1).stream()
+        docs = self._subcollection_ref(symbol).order_by("trade_date", direction="DESCENDING").limit(1).stream()  # type: ignore
         async for doc in docs:
             if doc.exists:
                 trade_date = doc.get("trade_date")

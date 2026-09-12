@@ -115,10 +115,10 @@ class ProviderFactory:
     async def get_history(
         self,
         symbol: str,
-        start,
-        end,
+        start: object,
+        end: object,
         interval: str = "1d",
-    ) -> dict:
+    ) -> dict[str, object]:
         """Get history through failover chain."""
         last_error = None
 
@@ -154,10 +154,10 @@ class ProviderFactory:
     async def get_history_batch(
         self,
         symbols: list[str],
-        start,
-        end,
+        start: object,
+        end: object,
         interval: str = "1d",
-    ) -> dict:
+    ) -> dict[str, object]:
         """Get history for multiple symbols."""
         last_error = None
 

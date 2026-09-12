@@ -17,7 +17,7 @@ class UniverseMembershipRepository:
         doc_ref = await self.collection.add(data)
         return doc_ref.id
 
-    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict]:
+    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict[str, object]]:
         """List membership changes for a symbol on a specific date."""
         docs = await self.collection.where("symbol", "==", symbol).where(
             "refresh_date", "==", refresh_date
@@ -29,7 +29,7 @@ class UniverseMembershipRepository:
             results.append(data)
         return results
 
-    async def list_by_date(self, refresh_date: date) -> list[dict]:
+    async def list_by_date(self, refresh_date: date) -> list[dict[str, object]]:
         """List all membership changes on a specific date."""
         docs = await self.collection.where("refresh_date", "==", refresh_date).stream()
         results = []

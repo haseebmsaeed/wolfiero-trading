@@ -22,11 +22,11 @@ class StockRepository(Protocol):
         """Get a stock by symbol (document ID)."""
         ...
 
-    async def list_active(self) -> list[dict]:
+    async def list_active(self) -> list[dict[str, object]]:
         """List all active stocks."""
         ...
 
-    async def list_universe(self) -> list[dict]:
+    async def list_universe(self) -> list[dict[str, object]]:
         """List all stocks in the active universe (in_universe=True)."""
         ...
 
@@ -74,7 +74,7 @@ class StrategyVersionRepository(Protocol):
         """Create a new strategy version (fails if already exists)."""
         ...
 
-    async def list_all(self) -> list[dict]:
+    async def list_all(self) -> list[dict[str, object]]:
         """List all strategy versions."""
         ...
 
@@ -86,11 +86,11 @@ class UniverseMembershipRepository(Protocol):
         """Create a new membership change record. Returns the auto-generated ID."""
         ...
 
-    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict]:
+    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict[str, object]]:
         """List membership changes for a symbol on a specific date."""
         ...
 
-    async def list_by_date(self, refresh_date: date) -> list[dict]:
+    async def list_by_date(self, refresh_date: date) -> list[dict[str, object]]:
         """List all membership changes on a specific date."""
         ...
 
@@ -128,12 +128,12 @@ class CandidateRepository(Protocol):
 
     async def list_by_run(
         self, run_id: str, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         """List candidates for a run, optionally filtering vetoed status."""
         ...
 
     async def list_by_date(
         self, trade_date: date, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         """List candidates for a trade date (searches all runs on that date)."""
         ...

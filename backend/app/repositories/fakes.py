@@ -20,10 +20,10 @@ class FakeStockRepository:
     async def get_by_symbol(self, symbol: str) -> dict | None:
         return self.stocks.get(symbol)
 
-    async def list_active(self) -> list[dict]:
+    async def list_active(self) -> list[dict[str, object]]:
         return [s for s in self.stocks.values() if s.get("is_active", False)]
 
-    async def list_universe(self) -> list[dict]:
+    async def list_universe(self) -> list[dict[str, object]]:
         return [
             s for s in self.stocks.values()
             if s.get("is_active", False) and s.get("in_universe", False)
@@ -96,7 +96,7 @@ class FakeStrategyVersionRepository:
             raise ValueError(f"Strategy version {version} already exists")
         self.versions[version] = {**data, "version": version}
 
-    async def list_all(self) -> list[dict]:
+    async def list_all(self) -> list[dict[str, object]]:
         return list(self.versions.values())
 
 
@@ -111,13 +111,13 @@ class FakeUniverseMembershipRepository:
         self.memberships[membership_id] = {**data, "id": membership_id}
         return membership_id
 
-    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict]:
+    async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict[str, object]]:
         return [
             m for m in self.memberships.values()
             if m.get("symbol") == symbol and m.get("refresh_date") == refresh_date
         ]
 
-    async def list_by_date(self, refresh_date: date) -> list[dict]:
+    async def list_by_date(self, refresh_date: date) -> list[dict[str, object]]:
         return [m for m in self.memberships.values() if m.get("refresh_date") == refresh_date]
 
 
@@ -161,7 +161,7 @@ class FakeCandidateRepository:
 
     async def list_by_run(
         self, run_id: str, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         results = [
             c for c in self.candidates.values()
             if c.get("run_id") == run_id
@@ -172,7 +172,7 @@ class FakeCandidateRepository:
 
     async def list_by_date(
         self, trade_date: date, include_vetoed: bool = False, limit: int = 20
-    ) -> list[dict]:
+    ) -> list[dict[str, object]]:
         results = [
             c for c in self.candidates.values()
             if c.get("trade_date") == trade_date

@@ -27,7 +27,7 @@ class StrategyVersionRepository:
             raise ValueError(f"Strategy version {version} already exists")
         await self.collection.document(version).set(data)
 
-    async def list_all(self) -> list[dict]:
+    async def list_all(self) -> list[dict[str, object]]:
         """List all strategy versions (all documents in collection)."""
         docs = await self.collection.stream()
         results = []
