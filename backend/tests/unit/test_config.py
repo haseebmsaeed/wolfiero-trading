@@ -17,11 +17,11 @@ class TestSettingsDefaults:
         valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         assert settings.log_level in valid_levels
 
-    def test_database_url_defaults(self):
-        """Test database URL defaults."""
+    def test_firestore_config_defaults(self):
+        """Test Firestore configuration defaults."""
         settings = Settings()
-        assert "postgresql" in settings.database_url
-        assert "async" in settings.database_url  # Should be asyncpg
+        assert settings.gcp_project_id == "wolfiero-dev"
+        assert isinstance(settings.google_application_credentials, str)
 
     def test_market_provider_defaults_to_yahoo(self):
         """Test that market provider defaults are set."""
@@ -75,16 +75,16 @@ class TestSettingsCaching:
 class TestSettingsEnvironmentOverrides:
     """Tests for environment variable overrides."""
 
-    def test_database_url_from_env(self, monkeypatch):
-        """Test that DATABASE_URL env var overrides default."""
-        test_url = "postgresql+asyncpg://user:pass@localhost/testdb"
-        monkeypatch.setenv("DATABASE_URL", test_url)
+    def test_gcp_project_id_from_env(self, monkeypatch):
+        """Test that GCP_PROJECT_ID env var overrides default."""
+        test_project = "my-test-project"
+        monkeypatch.setenv("GCP_PROJECT_ID", test_project)
 
         # Clear cache to force reload
         get_settings.cache_clear()
         settings = get_settings()
 
-        assert settings.database_url == test_url
+        assert settings.gcp_project_id == test_project
 
 
 class TestSettingsJSONEncoders:
