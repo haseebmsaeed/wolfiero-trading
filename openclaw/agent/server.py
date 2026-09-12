@@ -34,6 +34,30 @@ app = FastAPI(
 # Global state
 telegram_adapter = None
 telegram_task = None
+SYSTEM_PROMPT = None
+PROMPT_VERSION = "v1"
+
+
+def load_system_prompt():
+    """Load system prompt from file."""
+    global SYSTEM_PROMPT
+    prompt_file = "/app/prompts/system.v1.md"
+    try:
+        with open(prompt_file, "r") as f:
+            SYSTEM_PROMPT = f.read()
+        logger.info(f"Loaded system prompt v1 from {prompt_file}")
+    except FileNotFoundError:
+        logger.warning(f"System prompt not found at {prompt_file}, using fallback")
+        SYSTEM_PROMPT = """You are an analytical assistant to a swing trader.
+You have access to tools for technical analysis of stocks.
+
+GROUNDING RULES:
+- Every number in your response MUST come from a tool result in this conversation
+- Do NOT make up prices, percentages, or any market data
+- If a tool returns no data, say so clearly
+- Do NOT predict future prices
+
+Be direct, quantitative, and concise."""
 
 # Initialize Anthropic client
 client = anthropic.Anthropic(api_key=AI_API_KEY)
@@ -65,6 +89,7 @@ class AgentResponse(BaseModel):
     reply: str
     tool_calls: list[dict] = []
     grounding_ok: bool = True
+    prompt_version: str = PROMPT_VERSION  # For tracking regressions
 
 
 # Use tools from tools module
@@ -81,18 +106,8 @@ async def chat(message: Message) -> AgentResponse:
     """Handle a user message and return an agent response."""
     logger.info(f"Chat from {message.user_id}: {message.text}")
 
-    # System prompt for grounding
-    system_prompt = """You are an analytical assistant to a swing trader.
-You have access to tools for technical analysis of stocks.
-
-GROUNDING RULES:
-- Every number in your response MUST come from a tool result in this conversation
-- Do NOT make up prices, percentages, or any market data
-- If a tool returns no data, say so clearly
-- Do NOT predict future prices
-
-Be direct, quantitative, and concise. When asked about a stock, analyze its technical setup.
-When asked something outside your tool scope, politely decline."""
+    if not SYSTEM_PROMPT:
+        load_system_prompt()
 
     messages = [{"role": "user", "content": message.text}]
 
@@ -106,7 +121,7 @@ When asked something outside your tool scope, politely decline."""
         response = client.messages.create(
             model=AI_MODEL_MID,
             max_tokens=2048,
-            system=system_prompt,
+            system=SYSTEM_PROMPT,
             tools=TOOLS,
             messages=messages,
         )
@@ -171,8 +186,12 @@ async def health() -> dict:
 
 @app.on_event("startup")
 async def startup():
-    """Start Telegram polling on app startup."""
+    """Initialize on app startup."""
     global telegram_adapter, telegram_task
+
+    # Load system prompt
+    load_system_prompt()
+    logger.info(f"Using prompt version: {PROMPT_VERSION}")
 
     if not os.getenv("TELEGRAM_BOT_TOKEN"):
         logger.warning("TELEGRAM_BOT_TOKEN not set, Telegram bot disabled")
