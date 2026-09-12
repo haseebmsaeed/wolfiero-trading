@@ -2,19 +2,20 @@
 
 import uuid
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
-from typing import Sequence
+from typing import NamedTuple
 
 import pandas as pd
-from sqlalchemy import and_, select
+import pandas_market_calendars as mcal
+from sqlalchemy import and_, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logging import get_logger
 from app.models.scanner import ScanRun, Candidate
 from app.models.stock import Stock, PriceHistory
-from app.services.market_data import MarketDataService
-from app.services.technical_analysis import TechnicalAnalysisService
+from app.services import indicators
+from app.services.market_data import MarketDataService, validate_ohlcv
 
 logger = get_logger(__name__)
 
@@ -41,13 +42,29 @@ class StageResult:
         }
 
 
+class SetupResult(NamedTuple):
+    """Setup detection result."""
+
+    setup_type: str
+    quality: Decimal
+
+
 class ScannerService:
     """Multi-stage scanner for finding trading candidates."""
+
+    MIN_BARS_STAGE2 = 250
+    MIN_PRICE = Decimal("5.00")
+    MIN_DOLLAR_VOLUME = Decimal("20000000")
+    DATA_LOOKBACK_DAYS = 20
+    MAX_DATA_STALENESS = 3
+    MIN_SETUP_QUALITY = Decimal("0.45")
+    MIN_RS_PERCENTILE = Decimal("50")
 
     def __init__(self, db: AsyncSession, market_data_service: MarketDataService):
         """Initialize scanner with database and market data."""
         self.db = db
         self.market_data = market_data_service
+        self.calendar = mcal.get_calendar("NYSE")
 
     async def scan(
         self,
@@ -55,16 +72,7 @@ class ScannerService:
         strategy_version: str,
         force: bool = False,
     ) -> dict:
-        """Execute a full market scan.
-
-        Args:
-            trade_date: Date to scan for
-            strategy_version: Strategy version to use
-            force: If True, replace existing scan for this date/version
-
-        Returns:
-            dict with run_id, status, funnel, and candidates
-        """
+        """Execute a full market scan."""
         run_id = str(uuid.uuid4())
         logger.info(
             "scan_start",
@@ -74,15 +82,15 @@ class ScannerService:
         )
 
         try:
-            # Stage 1: Get universe
+            # Stage 1: Universe
             stage1 = await self._stage1_universe()
             logger.info("stage1_complete", run_id=run_id, survivors=len(stage1.survivors))
 
-            # Stage 2: Liquidity screen (vectorised)
+            # Stage 2: Liquidity (vectorised)
             stage2 = await self._stage2_liquidity(stage1.survivors, trade_date)
             logger.info("stage2_complete", run_id=run_id, survivors=len(stage2.survivors))
 
-            # Stage 3: Trend & relative strength
+            # Stage 3: Trend & RS
             stage3 = await self._stage3_trend(stage2.survivors, trade_date)
             logger.info("stage3_complete", run_id=run_id, survivors=len(stage3.survivors))
 
@@ -102,17 +110,16 @@ class ScannerService:
                 run_id=run_id,
                 trade_date=trade_date,
                 strategy_version=strategy_version,
-                status="RUNNING",
+                status="COMPLETED",
                 funnel=funnel,
                 data_coverage_pct=Decimal("100.00"),
             )
             self.db.add(scan_run)
             await self.db.flush()
 
-            # Return the run details
             return {
                 "run_id": run_id,
-                "status": "RUNNING",
+                "status": "COMPLETED",
                 "funnel": funnel,
             }
 
@@ -125,9 +132,7 @@ class ScannerService:
         stage = StageResult("Stage 1: Universe")
 
         result = await self.db.execute(
-            select(Stock.symbol).where(
-                and_(Stock.is_active, Stock.in_universe)
-            )
+            select(Stock.symbol).where(and_(Stock.is_active, Stock.in_universe))
         )
         symbols = {row[0] for row in result}
         stage.survivors = symbols
@@ -142,12 +147,90 @@ class ScannerService:
         stage = StageResult("Stage 2: Liquidity")
         stage.entered = len(symbols)
 
-        # In a production system, this would load all bars into one multi-index
-        # DataFrame and filter cross-sectionally. For now, we implement per-symbol.
+        lookback_start = trade_date - timedelta(days=self.DATA_LOOKBACK_DAYS + 10)
+
         for symbol in symbols:
-            # TODO: Apply liquidity checks
-            # This stage is CPU-bound, not I/O-bound
-            stage.survivors.add(symbol)
+            try:
+                # Get stock ID
+                result = await self.db.execute(
+                    select(Stock.id).where(Stock.symbol == symbol)
+                )
+                stock_id = result.scalar()
+                if not stock_id:
+                    stage.dropped_reasons["no_stock_record"] += 1
+                    continue
+
+                # Check: minimum bars
+                result = await self.db.execute(
+                    select(func.count(PriceHistory.id)).where(
+                        PriceHistory.stock_id == stock_id
+                    )
+                )
+                total_bars = result.scalar() or 0
+                if total_bars < self.MIN_BARS_STAGE2:
+                    stage.dropped_reasons["insufficient_bars"] += 1
+                    continue
+
+                # Get recent bars for liquidity and freshness checks
+                result = await self.db.execute(
+                    select(
+                        PriceHistory.close,
+                        PriceHistory.volume,
+                        PriceHistory.trade_date,
+                    )
+                    .where(
+                        and_(
+                            PriceHistory.stock_id == stock_id,
+                            PriceHistory.trade_date >= lookback_start,
+                        )
+                    )
+                    .order_by(PriceHistory.trade_date.desc())
+                    .limit(self.DATA_LOOKBACK_DAYS + 1)
+                )
+
+                bars = result.fetchall()
+                if not bars:
+                    stage.dropped_reasons["no_recent_bars"] += 1
+                    continue
+
+                # Check: data freshness
+                last_date = bars[0][2]
+                trading_days_since = len(
+                    self.calendar.sessions[
+                        (self.calendar.sessions > last_date)
+                        & (self.calendar.sessions <= trade_date)
+                    ]
+                )
+                if trading_days_since > self.MAX_DATA_STALENESS:
+                    stage.dropped_reasons["stale_data"] += 1
+                    continue
+
+                # Check: price threshold
+                last_close = Decimal(str(bars[0][0]))
+                if last_close < self.MIN_PRICE:
+                    stage.dropped_reasons["below_price_floor"] += 1
+                    continue
+
+                # Check: dollar volume (20-day average)
+                if len(bars) >= self.DATA_LOOKBACK_DAYS:
+                    volumes_closes = [
+                        (Decimal(str(b[0])), Decimal(str(b[1])))
+                        for b in bars[: self.DATA_LOOKBACK_DAYS]
+                    ]
+                    avg_dollar_vol = sum(c * v for c, v in volumes_closes) / len(
+                        volumes_closes
+                    )
+                    if avg_dollar_vol < self.MIN_DOLLAR_VOLUME:
+                        stage.dropped_reasons["low_dollar_volume"] += 1
+                        continue
+
+                # All checks passed
+                stage.survivors.add(symbol)
+
+            except Exception as e:
+                logger.warning("stage2_error", symbol=symbol, error=str(e))
+                stage.dropped_reasons["exception"] += 1
+                continue
 
         stage.exited = stage.entered - len(stage.survivors)
         return stage
@@ -159,14 +242,66 @@ class ScannerService:
         stage = StageResult("Stage 3: Trend & RS")
         stage.entered = len(symbols)
 
+        # Get RS percentiles for all survivors (batch computation)
+        rs_percentiles = await self._compute_rs_percentiles(symbols)
+
         for symbol in symbols:
             try:
-                # Get bars and compute indicators
-                # TODO: Full implementation
+                # Get bars
+                bars_df = await self.market_data.get_bars(symbol, days=250)
+                if bars_df is None or len(bars_df) < 200:
+                    stage.dropped_reasons["insufficient_bars"] += 1
+                    continue
+
+                close = bars_df["Close"]
+                high = bars_df["High"]
+                low = bars_df["Low"]
+
+                # Compute SMAs and EMA
+                sma_50 = indicators.sma(close, 50)
+                sma_200 = indicators.sma(close, 200)
+                ema_20 = indicators.ema(close, 20)
+
+                close_now = close.iloc[-1]
+                sma_50_now = sma_50.iloc[-1]
+                sma_200_now = sma_200.iloc[-1]
+                ema_20_now = ema_20.iloc[-1]
+
+                # Check: Close > 200-SMA
+                if close_now <= sma_200_now:
+                    stage.dropped_reasons["below_200sma"] += 1
+                    continue
+
+                # Check: Close > 50-SMA
+                if close_now <= sma_50_now:
+                    stage.dropped_reasons["below_50sma"] += 1
+                    continue
+
+                # Check: 50-SMA slope > 0
+                sma_50_20d_ago = sma_50.iloc[-20]
+                if sma_50_now <= sma_50_20d_ago:
+                    stage.dropped_reasons["negative_slope"] += 1
+                    continue
+
+                # Check: RS percentile >= 50
+                rs_pct = rs_percentiles.get(symbol, 0)
+                if rs_pct < self.MIN_RS_PERCENTILE:
+                    stage.dropped_reasons["low_rs"] += 1
+                    continue
+
+                # Check: Not extended (close <= 15% above 20-EMA)
+                extension_pct = ((close_now / ema_20_now) - 1) * 100
+                if extension_pct > 15:
+                    stage.dropped_reasons["extended"] += 1
+                    continue
+
+                # Passed all checks
                 stage.survivors.add(symbol)
+
             except Exception as e:
                 logger.warning("stage3_error", symbol=symbol, error=str(e))
                 stage.dropped_reasons["exception"] += 1
+                continue
 
         stage.exited = stage.entered - len(stage.survivors)
         return stage
@@ -180,15 +315,186 @@ class ScannerService:
 
         for symbol in symbols:
             try:
-                # Detect setup and score quality
-                # TODO: Full implementation
+                # Get bars and detect best setup
+                bars_df = await self.market_data.get_bars(symbol, days=250)
+                if bars_df is None or len(bars_df) < 60:
+                    stage.dropped_reasons["insufficient_bars"] += 1
+                    continue
+
+                # Run all setup detectors and keep best
+                setups: list[SetupResult] = []
+
+                # Breakout detection (placeholder)
+                breakout_quality = await self._detect_breakout(bars_df)
+                if breakout_quality > 0:
+                    setups.append(SetupResult("BREAKOUT", breakout_quality))
+
+                # Pullback detection (placeholder)
+                pullback_quality = await self._detect_pullback(bars_df)
+                if pullback_quality > 0:
+                    setups.append(SetupResult("PULLBACK", pullback_quality))
+
+                # Consolidation detection (placeholder)
+                consolidation_quality = await self._detect_consolidation(bars_df)
+                if consolidation_quality > 0:
+                    setups.append(SetupResult("CONSOLIDATION", consolidation_quality))
+
+                # Momentum continuation (placeholder)
+                momentum_quality = await self._detect_momentum(bars_df)
+                if momentum_quality > 0:
+                    setups.append(SetupResult("MOMENTUM", momentum_quality))
+
+                # Keep best setup
+                if not setups:
+                    stage.dropped_reasons["no_setups"] += 1
+                    continue
+
+                best_setup = max(setups, key=lambda s: s.quality)
+
+                if best_setup.quality < self.MIN_SETUP_QUALITY:
+                    stage.dropped_reasons["low_setup_quality"] += 1
+                    continue
+
+                # Passed: store setup info for candidate creation
                 stage.survivors.add(symbol)
+
             except Exception as e:
                 logger.warning("stage4_error", symbol=symbol, error=str(e))
                 stage.dropped_reasons["exception"] += 1
+                continue
 
         stage.exited = stage.entered - len(stage.survivors)
         return stage
+
+    async def _compute_rs_percentiles(self, symbols: set[str]) -> dict[str, Decimal]:
+        """Compute relative strength percentiles for symbols."""
+        percentiles = {}
+
+        # Placeholder: compute 3-month RS percentile vs universe
+        # Full implementation would compare each symbol's strength vs all others
+        for symbol in symbols:
+            try:
+                bars = await self.market_data.get_bars(symbol, days=90)
+                if bars is not None and len(bars) > 0:
+                    # Simple momentum: ROC over 20 days
+                    close = bars["Close"]
+                    if len(close) > 20:
+                        roc = ((close.iloc[-1] / close.iloc[-20]) - 1) * 100
+                        # Placeholder: convert to percentile (0-100)
+                        percentiles[symbol] = Decimal(str(min(100, max(0, roc + 50))))
+                    else:
+                        percentiles[symbol] = Decimal("50")
+                else:
+                    percentiles[symbol] = Decimal("50")
+            except Exception:
+                percentiles[symbol] = Decimal("50")
+
+        return percentiles
+
+    async def _detect_breakout(self, bars_df: pd.DataFrame) -> Decimal:
+        """Detect breakout setup quality."""
+        try:
+            # Placeholder implementation
+            high = bars_df["High"]
+            volume = bars_df["Volume"]
+
+            # Resistance: highest high in last 60 bars
+            resistance = high.iloc[-60:].max()
+
+            # Check if recent bars approaching or breaking resistance
+            recent_high = high.iloc[-1]
+            if recent_high >= resistance * Decimal("0.98"):
+                # Volume confirmation
+                vol_avg = volume.iloc[-20:].mean()
+                vol_ratio = volume.iloc[-1] / vol_avg if vol_avg > 0 else 1
+
+                # Quality score based on volume
+                quality = Decimal(str(min(1.0, vol_ratio / 1.3)))
+                return quality
+
+            return Decimal("0")
+        except Exception:
+            return Decimal("0")
+
+    async def _detect_pullback(self, bars_df: pd.DataFrame) -> Decimal:
+        """Detect pullback setup quality."""
+        try:
+            # Placeholder implementation
+            close = bars_df["Close"]
+            volume = bars_df["Volume"]
+            ema_20 = indicators.ema(close, 20)
+
+            # Recent high and support
+            recent_high = close.iloc[-30:].max()
+            support = ema_20.iloc[-1]
+
+            # Check if pulling back to support
+            if support < close.iloc[-1] < recent_high:
+                retracement_pct = (
+                    (recent_high - close.iloc[-1]) / (recent_high - support) * 100
+                )
+                if 3 <= retracement_pct <= 15:
+                    # Volume contraction on pullback
+                    vol_avg_20 = volume.iloc[-20:].mean()
+                    vol_avg_3 = volume.iloc[-3:].mean()
+                    if vol_avg_3 < vol_avg_20:
+                        quality = Decimal(str(min(1.0, retracement_pct / 15)))
+                        return quality
+
+            return Decimal("0")
+        except Exception:
+            return Decimal("0")
+
+    async def _detect_consolidation(self, bars_df: pd.DataFrame) -> Decimal:
+        """Detect consolidation/coil setup quality."""
+        try:
+            # Placeholder implementation
+            close = bars_df["Close"]
+            high = bars_df["High"]
+            low = bars_df["Low"]
+
+            # Range over last 10 bars
+            recent_range = (high.iloc[-10:].max() - low.iloc[-10:].min()) / close.iloc[
+                -1
+            ]
+
+            # Check if range is tight (<10%)
+            if recent_range < 0.10:
+                # Bollinger bands compression
+                bb_range = (
+                    high.iloc[-20:].max() - low.iloc[-20:].min()
+                ) / close.iloc[-1]
+                compression = 1 - (recent_range / bb_range) if bb_range > 0 else 0
+
+                quality = Decimal(str(min(1.0, compression)))
+                return quality
+
+            return Decimal("0")
+        except Exception:
+            return Decimal("0")
+
+    async def _detect_momentum(self, bars_df: pd.DataFrame) -> Decimal:
+        """Detect momentum continuation setup quality."""
+        try:
+            # Placeholder implementation
+            close = bars_df["Close"]
+            high = bars_df["High"]
+
+            # RS percentile (3-month)
+            if len(close) >= 63:
+                roc_3m = ((close.iloc[-1] / close.iloc[-63]) - 1) * 100
+                if roc_3m > 0:
+                    # Distance to 52-week high
+                    high_52w = high.iloc[-252:].max()
+                    distance_pct = (1 - (close.iloc[-1] / high_52w)) * 100
+
+                    if distance_pct < 10:
+                        quality = Decimal(str(min(1.0, roc_3m / 100)))
+                        return quality
+
+            return Decimal("0")
+        except Exception:
+            return Decimal("0")
 
     async def get_scan_run(self, run_id: str) -> dict:
         """Get details of a scan run."""
