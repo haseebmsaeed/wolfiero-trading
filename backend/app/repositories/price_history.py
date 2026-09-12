@@ -1,12 +1,9 @@
 """Firestore-backed PriceHistory repository."""
 
 from datetime import date
-from typing import Optional
 
-from google.cloud.firestore import AsyncClient
 import pandas as pd
-
-from app.models import PriceHistory
+from google.cloud.firestore import AsyncClient
 
 
 class PriceHistoryRepository:
@@ -21,7 +18,7 @@ class PriceHistoryRepository:
         return self.stocks_collection.document(symbol).collection("price_history")
 
     async def get_bars(
-        self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None
+        self, symbol: str, start_date: date | None = None, end_date: date | None = None
     ) -> pd.DataFrame:
         """Fetch bars for a symbol, optionally filtered by date range. Returns DataFrame with trade_date index."""
         query = self._subcollection_ref(symbol)
@@ -74,7 +71,7 @@ class PriceHistoryRepository:
         aggregate_query = await self._subcollection_ref(symbol).count().get()
         return aggregate_query[0][0].value
 
-    async def latest_date(self, symbol: str) -> Optional[date]:
+    async def latest_date(self, symbol: str) -> date | None:
         """Get the most recent trade_date for a symbol."""
         docs = await self._subcollection_ref(symbol).order_by("trade_date", direction="DESCENDING").limit(1).stream()
         async for doc in docs:

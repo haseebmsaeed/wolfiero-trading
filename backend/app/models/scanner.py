@@ -1,8 +1,8 @@
 """Scanner and universe document shapes for Firestore."""
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -25,9 +25,9 @@ class ScanRun(BaseModel):
     strategy_version: str
     status: str = "RUNNING"
     funnel: dict[str, Any]
-    data_coverage_pct: Optional[Decimal] = None
-    stage_timings: Optional[dict[str, Any]] = None
-    error_message: Optional[str] = None
+    data_coverage_pct: Decimal | None = None
+    stage_timings: dict[str, Any] | None = None
+    error_message: str | None = None
 
 
 class Candidate(BaseModel):
@@ -36,11 +36,11 @@ class Candidate(BaseModel):
     run_id: str
     symbol: str
     trade_date: date
-    rank: Optional[int] = None
+    rank: int | None = None
     score: Decimal
     score_breakdown: dict[str, Any]
     setup_type: str
     setup_quality: Decimal
     technical_snapshot: dict[str, Any]
     is_vetoed: bool = False
-    veto_reasons: Optional[list[str]] = None
+    veto_reasons: list[str] | None = None

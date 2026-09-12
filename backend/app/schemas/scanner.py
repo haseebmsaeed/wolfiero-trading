@@ -1,9 +1,9 @@
 """Scanner and scoring schemas."""
 
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class StageResult(BaseModel):

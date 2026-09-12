@@ -5,6 +5,7 @@ Provides repositories and services to FastAPI endpoints via Depends().
 
 from fastapi import Depends
 
+from app.config import get_settings
 from app.db.firestore import get_firestore_client
 from app.providers.market_data import get_provider_factory
 from app.repositories import (
@@ -15,7 +16,6 @@ from app.repositories import (
     StrategyVersionRepository,
     UniverseMembershipRepository,
 )
-from app.config import get_settings
 from app.services.market_data import MarketDataService
 from app.services.scanner import ScannerService
 from app.services.universe import UniverseService

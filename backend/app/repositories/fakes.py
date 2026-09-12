@@ -5,10 +5,8 @@ to run with zero database/emulator/Docker dependencies. Perfect for testing serv
 in isolation.
 """
 
-from datetime import date
-from decimal import Decimal
-from typing import Optional
 import uuid
+from datetime import date
 
 import pandas as pd
 
@@ -19,7 +17,7 @@ class FakeStockRepository:
     def __init__(self):
         self.stocks: dict[str, dict] = {}
 
-    async def get_by_symbol(self, symbol: str) -> Optional[dict]:
+    async def get_by_symbol(self, symbol: str) -> dict | None:
         return self.stocks.get(symbol)
 
     async def list_active(self) -> list[dict]:
@@ -52,7 +50,7 @@ class FakePriceHistoryRepository:
         self.bars: dict[str, pd.DataFrame] = {}
 
     async def get_bars(
-        self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None
+        self, symbol: str, start_date: date | None = None, end_date: date | None = None
     ) -> pd.DataFrame:
         if symbol not in self.bars:
             return pd.DataFrame()
@@ -76,7 +74,7 @@ class FakePriceHistoryRepository:
             return 0
         return len(self.bars[symbol])
 
-    async def latest_date(self, symbol: str) -> Optional[date]:
+    async def latest_date(self, symbol: str) -> date | None:
         if symbol not in self.bars or len(self.bars[symbol]) == 0:
             return None
         return self.bars[symbol].index[-1].date() if hasattr(
@@ -90,7 +88,7 @@ class FakeStrategyVersionRepository:
     def __init__(self):
         self.versions: dict[str, dict] = {}
 
-    async def get(self, version: str) -> Optional[dict]:
+    async def get(self, version: str) -> dict | None:
         return self.versions.get(version)
 
     async def create(self, version: str, data: dict) -> None:
@@ -134,10 +132,10 @@ class FakeScanRunRepository:
             raise ValueError(f"Scan run {run_id} already exists")
         self.runs[run_id] = {**data, "run_id": run_id}
 
-    async def get(self, run_id: str) -> Optional[dict]:
+    async def get(self, run_id: str) -> dict | None:
         return self.runs.get(run_id)
 
-    async def get_by_date_version(self, trade_date: date, version: str) -> Optional[dict]:
+    async def get_by_date_version(self, trade_date: date, version: str) -> dict | None:
         for run in self.runs.values():
             if run.get("trade_date") == trade_date and run.get("strategy_version") == version:
                 return run
@@ -157,7 +155,7 @@ class FakeCandidateRepository:
                 raise ValueError(f"Candidate {key} already exists (immutable)")
             self.candidates[key] = {**cand, "run_id": run_id}
 
-    async def get(self, run_id: str, symbol: str) -> Optional[dict]:
+    async def get(self, run_id: str, symbol: str) -> dict | None:
         key = f"{run_id}_{symbol}"
         return self.candidates.get(key)
 

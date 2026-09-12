@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import stocks, admin, scanner
+from app.api import admin, scanner, stocks
 from app.config import get_settings
 from app.logging import get_logger, set_request_id, setup_logging
 

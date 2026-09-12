@@ -1,11 +1,8 @@
 """Firestore-backed UniverseMembership repository."""
 
 from datetime import date
-from typing import Optional
 
 from google.cloud.firestore import AsyncClient
-
-from app.models import UniverseMembership
 
 
 class UniverseMembershipRepository:

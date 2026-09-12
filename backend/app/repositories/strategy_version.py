@@ -1,10 +1,7 @@
 """Firestore-backed StrategyVersion repository."""
 
-from typing import Optional
 
 from google.cloud.firestore import AsyncClient
-
-from app.models import StrategyVersion
 
 
 class StrategyVersionRepository:
@@ -14,7 +11,7 @@ class StrategyVersionRepository:
         self.db = db
         self.collection = db.collection("strategy_versions")
 
-    async def get(self, version: str) -> Optional[dict]:
+    async def get(self, version: str) -> dict | None:
         """Get a strategy version by version string."""
         doc = await self.collection.document(version).get()
         if doc.exists:

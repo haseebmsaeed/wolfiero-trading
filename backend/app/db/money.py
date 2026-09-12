@@ -9,8 +9,7 @@ This module is the single point of contact for the Decimal ↔ integer conversio
 ensuring correctness throughout the codebase per CLAUDE.md rule: "Money is Decimal, never float."
 """
 
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Literal
+from decimal import ROUND_HALF_UP, Decimal
 
 
 def to_firestore_int(value: Decimal, scale: int) -> int:

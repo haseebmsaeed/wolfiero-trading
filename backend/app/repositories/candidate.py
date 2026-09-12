@@ -1,11 +1,8 @@
 """Firestore-backed Candidate repository."""
 
 from datetime import date
-from typing import Optional
 
 from google.cloud.firestore import AsyncClient
-
-from app.models import Candidate
 
 
 class CandidateRepository:
@@ -36,7 +33,7 @@ class CandidateRepository:
 
         await batch.commit()
 
-    async def get(self, run_id: str, symbol: str) -> Optional[dict]:
+    async def get(self, run_id: str, symbol: str) -> dict | None:
         """Get a single candidate by run_id and symbol."""
         doc = await self._subcollection_ref(run_id).document(symbol).get()
         if doc.exists:

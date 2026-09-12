@@ -1,18 +1,19 @@
 """Firestore seeding — load initial universe and strategy version."""
 
 import asyncio
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+
 import pandas as pd
 
 from app.config import get_settings
-from app.db.firestore import get_firestore_client
 from app.db import now_utc
+from app.db.firestore import get_firestore_client
 from app.providers.market_data import get_provider_factory
 from app.providers.market_data.base import Interval
 from app.repositories import (
+    PriceHistoryRepository,
     StockRepository,
     StrategyVersionRepository,
-    PriceHistoryRepository,
 )
 
 

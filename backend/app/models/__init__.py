@@ -1,13 +1,13 @@
 """Pydantic document shapes for Firestore."""
 
+from app.models.scanner import Candidate, ScanRun, UniverseMembership
 from app.models.stock import PriceHistory, Stock, StrategyVersion
-from app.models.scanner import UniverseMembership, ScanRun, Candidate
 
 __all__ = [
+    "Candidate",
     "PriceHistory",
+    "ScanRun",
     "Stock",
     "StrategyVersion",
     "UniverseMembership",
-    "ScanRun",
-    "Candidate",
 ]

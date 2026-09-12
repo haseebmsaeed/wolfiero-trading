@@ -10,8 +10,7 @@ dependencies.
 """
 
 from datetime import date
-from decimal import Decimal
-from typing import Optional, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -19,7 +18,7 @@ import pandas as pd
 class StockRepository(Protocol):
     """Protocol for Stock data access."""
 
-    async def get_by_symbol(self, symbol: str) -> Optional[dict]:
+    async def get_by_symbol(self, symbol: str) -> dict | None:
         """Get a stock by symbol (document ID)."""
         ...
 
@@ -46,7 +45,7 @@ class PriceHistoryRepository(Protocol):
     """Protocol for PriceHistory (OHLCV bar) data access."""
 
     async def get_bars(
-        self, symbol: str, start_date: Optional[date] = None, end_date: Optional[date] = None
+        self, symbol: str, start_date: date | None = None, end_date: date | None = None
     ) -> pd.DataFrame:
         """Get bars for a symbol, optionally filtered by date range. Returns DataFrame."""
         ...
@@ -59,7 +58,7 @@ class PriceHistoryRepository(Protocol):
         """Count total bars for a symbol."""
         ...
 
-    async def latest_date(self, symbol: str) -> Optional[date]:
+    async def latest_date(self, symbol: str) -> date | None:
         """Get the most recent trade_date for a symbol."""
         ...
 
@@ -67,7 +66,7 @@ class PriceHistoryRepository(Protocol):
 class StrategyVersionRepository(Protocol):
     """Protocol for StrategyVersion data access."""
 
-    async def get(self, version: str) -> Optional[dict]:
+    async def get(self, version: str) -> dict | None:
         """Get a strategy version by version string."""
         ...
 
@@ -103,11 +102,11 @@ class ScanRunRepository(Protocol):
         """Create a new scan run (fails if run_id already exists)."""
         ...
 
-    async def get(self, run_id: str) -> Optional[dict]:
+    async def get(self, run_id: str) -> dict | None:
         """Get a scan run by run_id."""
         ...
 
-    async def get_by_date_version(self, trade_date: date, version: str) -> Optional[dict]:
+    async def get_by_date_version(self, trade_date: date, version: str) -> dict | None:
         """Get the scan run for a specific date and strategy version."""
         ...
 
@@ -123,7 +122,7 @@ class CandidateRepository(Protocol):
         """
         ...
 
-    async def get(self, run_id: str, symbol: str) -> Optional[dict]:
+    async def get(self, run_id: str, symbol: str) -> dict | None:
         """Get a single candidate by run_id and symbol."""
         ...
 

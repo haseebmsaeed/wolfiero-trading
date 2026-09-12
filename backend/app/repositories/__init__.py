@@ -15,10 +15,10 @@ from app.repositories.strategy_version import StrategyVersionRepository
 from app.repositories.universe_membership import UniverseMembershipRepository
 
 __all__ = [
-    "StockRepository",
+    "CandidateRepository",
     "PriceHistoryRepository",
+    "ScanRunRepository",
+    "StockRepository",
     "StrategyVersionRepository",
     "UniverseMembershipRepository",
-    "ScanRunRepository",
-    "CandidateRepository",
 ]

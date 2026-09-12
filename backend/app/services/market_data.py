@@ -1,7 +1,6 @@
 """Market data service — fetch, validate, and cache OHLCV data."""
 
-from datetime import date, datetime, timedelta
-from decimal import Decimal
+from datetime import date, timedelta
 
 import pandas as pd
 

@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -11,19 +11,19 @@ class Stock(BaseModel):
     """Firestore document: stocks/{symbol}. One per tradeable instrument."""
 
     symbol: str
-    name: Optional[str] = None
-    exchange: Optional[str] = None
-    asset_type: Optional[str] = None
-    sector: Optional[str] = None
-    industry: Optional[str] = None
-    market_cap: Optional[Decimal] = None
-    shares_outstanding: Optional[int] = None
+    name: str | None = None
+    exchange: str | None = None
+    asset_type: str | None = None
+    sector: str | None = None
+    industry: str | None = None
+    market_cap: Decimal | None = None
+    shares_outstanding: int | None = None
     is_active: bool = True
     in_universe: bool = False
     is_blocklisted: bool = False
-    first_trade_date: Optional[date] = None
-    fundamentals: Optional[dict[str, Any]] = None
-    fundamentals_updated_at: Optional[datetime] = None
+    first_trade_date: date | None = None
+    fundamentals: dict[str, Any] | None = None
+    fundamentals_updated_at: datetime | None = None
 
 
 class PriceHistory(BaseModel):
@@ -36,7 +36,7 @@ class PriceHistory(BaseModel):
     close: Decimal
     volume: int
     adjusted: bool = True
-    source: Optional[str] = None
+    source: str | None = None
     ingested_at: datetime
 
 
@@ -46,6 +46,6 @@ class StrategyVersion(BaseModel):
     version: str
     weights: dict[str, Any]
     thresholds: dict[str, Any]
-    notes: Optional[str] = None
+    notes: str | None = None
     activated_at: datetime
-    deactivated_at: Optional[datetime] = None
+    deactivated_at: datetime | None = None

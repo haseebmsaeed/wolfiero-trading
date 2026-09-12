@@ -1,11 +1,8 @@
 """Firestore-backed ScanRun repository."""
 
 from datetime import date
-from typing import Optional
 
 from google.cloud.firestore import AsyncClient
-
-from app.models import ScanRun
 
 
 class ScanRunRepository:
@@ -22,7 +19,7 @@ class ScanRunRepository:
             raise ValueError(f"Scan run {run_id} already exists")
         await self.collection.document(run_id).set(data)
 
-    async def get(self, run_id: str) -> Optional[dict]:
+    async def get(self, run_id: str) -> dict | None:
         """Get a scan run by run_id."""
         doc = await self.collection.document(run_id).get()
         if doc.exists:
@@ -31,7 +28,7 @@ class ScanRunRepository:
             return data
         return None
 
-    async def get_by_date_version(self, trade_date: date, version: str) -> Optional[dict]:
+    async def get_by_date_version(self, trade_date: date, version: str) -> dict | None:
         """Get the scan run for a specific date and strategy version."""
         docs = await self.collection.where("trade_date", "==", trade_date).where(
             "strategy_version", "==", version

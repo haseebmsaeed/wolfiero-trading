@@ -1,10 +1,7 @@
 """Firestore-backed Stock repository."""
 
-from typing import Optional
 
 from google.cloud.firestore import AsyncClient
-
-from app.models import Stock
 
 
 class StockRepository:
@@ -14,7 +11,7 @@ class StockRepository:
         self.db = db
         self.collection = db.collection("stocks")
 
-    async def get_by_symbol(self, symbol: str) -> Optional[dict]:
+    async def get_by_symbol(self, symbol: str) -> dict | None:
         """Get a stock document by symbol (the document ID)."""
         doc = await self.collection.document(symbol).get()
         if doc.exists:
