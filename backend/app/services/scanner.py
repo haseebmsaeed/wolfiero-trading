@@ -8,14 +8,16 @@ from typing import NamedTuple
 
 import pandas as pd
 import pandas_market_calendars as mcal
-from sqlalchemy import and_, select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logging import get_logger
-from app.models.scanner import ScanRun, Candidate
-from app.models.stock import Stock, PriceHistory
+from app.repositories.protocols import (
+    CandidateRepository,
+    PriceHistoryRepository,
+    ScanRunRepository,
+    StockRepository,
+)
 from app.services import indicators
-from app.services.market_data import MarketDataService, validate_ohlcv
+from app.services.market_data import MarketDataService
 from app.services.scoring import ScoringService
 
 logger = get_logger(__name__)
@@ -61,10 +63,20 @@ class ScannerService:
     MIN_SETUP_QUALITY = Decimal("0.45")
     MIN_RS_PERCENTILE = Decimal("50")
 
-    def __init__(self, db: AsyncSession, market_data_service: MarketDataService):
-        """Initialize scanner with database and market data."""
-        self.db = db
+    def __init__(
+        self,
+        market_data_service: MarketDataService,
+        stock_repository: StockRepository,
+        price_history_repository: PriceHistoryRepository,
+        scan_run_repository: ScanRunRepository,
+        candidate_repository: CandidateRepository,
+    ):
+        """Initialize scanner with repositories and market data."""
         self.market_data = market_data_service
+        self.stock_repo = stock_repository
+        self.price_repo = price_history_repository
+        self.scan_run_repo = scan_run_repository
+        self.candidate_repo = candidate_repository
         self.calendar = mcal.get_calendar("NYSE")
 
     async def scan(
@@ -113,16 +125,16 @@ class ScannerService:
             logger.info("stage5_complete", run_id=run_id, candidates=len(candidates))
 
             # Persist scan run
-            scan_run = ScanRun(
-                run_id=run_id,
-                trade_date=trade_date,
-                strategy_version=strategy_version,
-                status="COMPLETED",
-                funnel=funnel,
-                data_coverage_pct=Decimal("100.00"),
+            await self.scan_run_repo.create(
+                run_id,
+                {
+                    "trade_date": trade_date,
+                    "strategy_version": strategy_version,
+                    "status": "COMPLETED",
+                    "funnel": funnel,
+                    "data_coverage_pct": Decimal("100.00"),
+                },
             )
-            self.db.add(scan_run)
-            await self.db.commit()
 
             return {
                 "run_id": run_id,
@@ -139,10 +151,8 @@ class ScannerService:
         """Stage 1: Get active universe."""
         stage = StageResult("Stage 1: Universe")
 
-        result = await self.db.execute(
-            select(Stock.symbol).where(and_(Stock.is_active, Stock.in_universe))
-        )
-        symbols = {row[0] for row in result}
+        stocks = await self.stock_repo.list_universe()
+        symbols = {stock["symbol"] for stock in stocks}
         stage.survivors = symbols
         stage.entered = len(symbols)
 
@@ -159,50 +169,31 @@ class ScannerService:
 
         for symbol in symbols:
             try:
-                # Get stock ID
-                result = await self.db.execute(
-                    select(Stock.id).where(Stock.symbol == symbol)
-                )
-                stock_id = result.scalar()
-                if not stock_id:
+                # Check: stock exists
+                stock = await self.stock_repo.get_by_symbol(symbol)
+                if not stock:
                     stage.dropped_reasons["no_stock_record"] += 1
                     continue
 
                 # Check: minimum bars
-                result = await self.db.execute(
-                    select(func.count(PriceHistory.trade_date)).where(
-                        PriceHistory.stock_id == stock_id
-                    )
-                )
-                total_bars = result.scalar() or 0
+                total_bars = await self.price_repo.count(symbol)
                 if total_bars < self.MIN_BARS_STAGE2:
                     stage.dropped_reasons["insufficient_bars"] += 1
                     continue
 
                 # Get recent bars for liquidity and freshness checks
-                result = await self.db.execute(
-                    select(
-                        PriceHistory.close,
-                        PriceHistory.volume,
-                        PriceHistory.trade_date,
-                    )
-                    .where(
-                        and_(
-                            PriceHistory.stock_id == stock_id,
-                            PriceHistory.trade_date >= lookback_start,
-                        )
-                    )
-                    .order_by(PriceHistory.trade_date.desc())
-                    .limit(self.DATA_LOOKBACK_DAYS + 1)
+                bars_df = await self.price_repo.get_bars(
+                    symbol, start_date=lookback_start, end_date=trade_date
                 )
 
-                bars = result.fetchall()
-                if not bars:
+                if bars_df.empty:
                     stage.dropped_reasons["no_recent_bars"] += 1
                     continue
 
                 # Check: data freshness
-                last_date = bars[0][2]
+                last_date = bars_df.index[-1]
+                if hasattr(last_date, "date"):
+                    last_date = last_date.date()
                 trading_days_since = len(
                     self.calendar.valid_days(start_date=last_date, end_date=trade_date)
                 )
@@ -210,21 +201,28 @@ class ScannerService:
                     stage.dropped_reasons["stale_data"] += 1
                     continue
 
-                # Check: price threshold
-                last_close = Decimal(str(bars[0][0]))
+                # Check: price threshold (last close)
+                last_close_val = bars_df["close"].iloc[-1]
+                if isinstance(last_close_val, Decimal):
+                    last_close = last_close_val
+                else:
+                    last_close = Decimal(str(last_close_val))
+
                 if last_close < self.MIN_PRICE:
                     stage.dropped_reasons["below_price_floor"] += 1
                     continue
 
                 # Check: dollar volume (20-day average)
-                if len(bars) >= self.DATA_LOOKBACK_DAYS:
-                    volumes_closes = [
-                        (Decimal(str(b[0])), Decimal(str(b[1])))
-                        for b in bars[: self.DATA_LOOKBACK_DAYS]
-                    ]
-                    avg_dollar_vol = sum(c * v for c, v in volumes_closes) / len(
-                        volumes_closes
-                    )
+                if len(bars_df) >= self.DATA_LOOKBACK_DAYS:
+                    lookback_bars = bars_df.tail(self.DATA_LOOKBACK_DAYS)
+                    closes = lookback_bars["close"]
+                    volumes = lookback_bars["volume"]
+
+                    if isinstance(closes.iloc[0], Decimal):
+                        avg_dollar_vol = (closes * volumes).sum() / len(closes)
+                    else:
+                        avg_dollar_vol = Decimal(str((closes * volumes).sum() / len(closes)))
+
                     if avg_dollar_vol < self.MIN_DOLLAR_VOLUME:
                         stage.dropped_reasons["low_dollar_volume"] += 1
                         continue
@@ -517,23 +515,20 @@ class ScannerService:
         except Exception:
             return Decimal("0")
 
-    async def get_scan_run(self, run_id: str) -> dict:
+    async def get_scan_run(self, run_id: str) -> dict | None:
         """Get details of a scan run."""
-        result = await self.db.execute(
-            select(ScanRun).where(ScanRun.run_id == run_id)
-        )
-        scan_run = result.scalar()
+        scan_run = await self.scan_run_repo.get(run_id)
 
         if not scan_run:
             return None
 
         return {
-            "run_id": scan_run.run_id,
-            "trade_date": str(scan_run.trade_date),
-            "strategy_version": scan_run.strategy_version,
-            "status": scan_run.status,
-            "funnel": scan_run.funnel,
-            "error_message": scan_run.error_message,
+            "run_id": scan_run["run_id"],
+            "trade_date": str(scan_run["trade_date"]),
+            "strategy_version": scan_run["strategy_version"],
+            "status": scan_run["status"],
+            "funnel": scan_run["funnel"],
+            "error_message": scan_run.get("error_message"),
         }
 
     async def get_candidates(
@@ -543,24 +538,19 @@ class ScannerService:
         include_vetoed: bool = False,
     ) -> list[dict]:
         """Get candidates from a scan on a given date."""
-        query = select(Candidate).where(Candidate.trade_date == trade_date)
-
-        if not include_vetoed:
-            query = query.where(Candidate.is_vetoed == False)
-
-        query = query.order_by(Candidate.rank).limit(limit)
-        result = await self.db.execute(query)
-        candidates = result.scalars().all()
+        candidates = await self.candidate_repo.list_by_date(
+            trade_date, include_vetoed=include_vetoed, limit=limit
+        )
 
         return [
             {
-                "rank": c.rank,
-                "symbol": c.symbol,
-                "score": str(c.score),
-                "setup_type": c.setup_type,
-                "setup_quality": str(c.setup_quality),
-                "is_vetoed": c.is_vetoed,
-                "veto_reasons": c.veto_reasons,
+                "rank": c.get("rank"),
+                "symbol": c["symbol"],
+                "score": str(c["score"]),
+                "setup_type": c["setup_type"],
+                "setup_quality": str(c["setup_quality"]),
+                "is_vetoed": c.get("is_vetoed", False),
+                "veto_reasons": c.get("veto_reasons"),
             }
             for c in candidates
         ]
@@ -571,7 +561,7 @@ class ScannerService:
         rs_percentiles: dict[str, Decimal],
         run_id: str,
         trade_date: date,
-    ) -> list[Candidate]:
+    ) -> list[dict]:
         """Stage 5: Score candidates and create records.
 
         Args:
@@ -581,7 +571,7 @@ class ScannerService:
             trade_date: Trading date
 
         Returns:
-            List of created Candidate records
+            List of created candidate dicts
         """
         scoring_service = ScoringService()
         candidates = []
@@ -599,12 +589,9 @@ class ScannerService:
                     regime="RISK_ON",
                 )
 
-                # Get stock ID
-                result = await self.db.execute(
-                    select(Stock.id).where(Stock.symbol == symbol)
-                )
-                stock_id = result.scalar()
-                if not stock_id:
+                # Verify stock exists
+                stock = await self.stock_repo.get_by_symbol(symbol)
+                if not stock:
                     logger.warning("stage5_no_stock", symbol=symbol)
                     continue
 
@@ -620,28 +607,26 @@ class ScannerService:
                     if name != "total_score"
                 }
 
-                # Create Candidate record
-                candidate = Candidate(
-                    run_id=run_id,
-                    stock_id=stock_id,
-                    symbol=symbol,
-                    trade_date=trade_date,
-                    score=score_breakdown.total_score,
-                    score_breakdown=score_breakdown_dict,
-                    setup_type=setup_type,
-                    setup_quality=setup_quality,
-                    technical_snapshot={
+                # Create candidate dict
+                candidate_dict = {
+                    "run_id": run_id,
+                    "symbol": symbol,
+                    "trade_date": trade_date,
+                    "score": score_breakdown.total_score,
+                    "score_breakdown": score_breakdown_dict,
+                    "setup_type": setup_type,
+                    "setup_quality": setup_quality,
+                    "technical_snapshot": {
                         "sma_50": 0,
                         "sma_200": 0,
                         "ema_20": 0,
                         "rsi": 0,
                     },
-                    is_vetoed=False,
-                    veto_reasons=None,
-                )
+                    "is_vetoed": False,
+                    "veto_reasons": None,
+                }
 
-                self.db.add(candidate)
-                candidates.append(candidate)
+                candidates.append(candidate_dict)
 
             except Exception as e:
                 logger.warning("stage5_error", symbol=symbol, error=str(e))
@@ -649,6 +634,6 @@ class ScannerService:
 
         # Commit all candidates
         if candidates:
-            await self.db.commit()
+            await self.candidate_repo.create_many(run_id, candidates)
 
         return candidates
