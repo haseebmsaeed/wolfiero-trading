@@ -13,15 +13,13 @@ class Settings(BaseSettings):
     """Application settings, loaded from environment variables."""
 
     # Core
-    database_url: str
     log_level: str = "INFO"
     tz: str = "America/New_York"
 
-    # Postgres
-    db_user: str = "wolfiero"
-    db_password: str = "wolfiero"
-    db_name: str = "wolfiero"
-    db_port: int = 5432
+    # Firestore
+    gcp_project_id: str = "wolfiero-dev"
+    google_application_credentials: str = ""
+    firestore_emulator_host: str = ""
 
     # Market Data
     market_data_provider: str = "yahoo"
