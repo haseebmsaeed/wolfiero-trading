@@ -7,12 +7,12 @@ import asyncio
 from typing import Any
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
-import anthropic
 import httpx
 
 from .telegram_adapter import TelegramAdapter
 from . import tools
 from .grounding_guard import validate_grounding, maybe_append_caveat
+from .llm_provider import get_llm_provider
 
 # Load configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -20,6 +20,7 @@ logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 # Configuration from environment
+AI_PROVIDER = os.getenv("AI_PROVIDER", "claude").lower()
 AI_MODEL = os.getenv("AI_MODEL", "claude-opus-5")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 WOLFIERO_API_URL = os.getenv("WOLFIERO_API_URL", "http://wolfiero-api:8000")
@@ -39,6 +40,7 @@ SYSTEM_PROMPT = None
 PROMPT_VERSION = "v1"
 GROUNDING_VIOLATIONS_TODAY = 0
 GROUNDING_GUARD_MODE = os.getenv("GROUNDING_GUARD_MODE", "log")  # log or block
+llm_provider = None
 
 
 def load_system_prompt():
@@ -62,8 +64,12 @@ GROUNDING RULES:
 
 Be direct, quantitative, and concise."""
 
-# Initialize Anthropic client
-client = anthropic.Anthropic(api_key=AI_API_KEY)
+
+def init_llm_provider():
+    """Initialize LLM provider (Claude or Bedrock)."""
+    global llm_provider
+    llm_provider = get_llm_provider(AI_PROVIDER)
+    logger.info(f"LLM provider initialized: {AI_PROVIDER}")
 
 # Initialize tools module with API config
 tools.WOLFIERO_API_URL = WOLFIERO_API_URL
@@ -122,7 +128,7 @@ async def chat(message: Message) -> AgentResponse:
     for iteration in range(max_iterations):
         logger.info(f"Agent iteration {iteration + 1}")
 
-        response = client.messages.create(
+        response = await llm_provider.create_message(
             model=AI_MODEL,
             max_tokens=2048,
             system=SYSTEM_PROMPT,
@@ -194,6 +200,7 @@ async def health() -> dict:
     return {
         "status": "ok",
         "service": "openclaw-agent",
+        "provider": AI_PROVIDER,
         "model": AI_MODEL,
     }
 
@@ -203,9 +210,13 @@ async def startup():
     """Initialize on app startup."""
     global telegram_adapter, telegram_task
 
+    # Initialize LLM provider
+    init_llm_provider()
+
     # Load system prompt
     load_system_prompt()
     logger.info(f"Using prompt version: {PROMPT_VERSION}")
+    logger.info(f"Using AI provider: {AI_PROVIDER}, model: {AI_MODEL}")
 
     if not os.getenv("TELEGRAM_BOT_TOKEN"):
         logger.warning("TELEGRAM_BOT_TOKEN not set, Telegram bot disabled")
@@ -264,6 +275,7 @@ async def health_deep() -> dict:
         "openclaw": "ok",
         "wolfiero_api": "ok" if api_ok else "unreachable",
         "telegram": "ok" if telegram_ok else "disabled" if not telegram_adapter else "offline",
+        "provider": AI_PROVIDER,
         "model": AI_MODEL,
         "grounding": {
             "mode": GROUNDING_GUARD_MODE,
