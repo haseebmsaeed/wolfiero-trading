@@ -3,6 +3,7 @@
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     Date,
     DateTime,
