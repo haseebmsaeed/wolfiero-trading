@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):  # type: ignore
     settings.validate_strategy_weights()
     logger.info(
         "application_started",
-        environment=settings.environment,
         strategy_version=settings.strategy_version,
     )
 
@@ -45,10 +44,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Add CORS middleware (restrictive for production)
+    # Add CORS middleware (restrictive)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.environment == "development" else [],
+        allow_origins=[],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -101,7 +100,6 @@ def create_app() -> FastAPI:
         """Deep health check (DB, providers, etc.)."""
         return {
             "status": "healthy",
-            "environment": settings.environment,
             "strategy_version": settings.strategy_version,
         }
 
@@ -125,7 +123,7 @@ def create_app() -> FastAPI:
                 "error": {
                     "code": "INTERNAL_ERROR",
                     "message": "An unexpected error occurred",
-                    "detail": str(exc) if settings.environment == "development" else None,
+                    "detail": None,
                     "request_id": request_id,
                 }
             },

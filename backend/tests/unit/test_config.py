@@ -11,11 +11,6 @@ from app.config import Settings, get_settings
 class TestSettingsDefaults:
     """Tests for Settings default values."""
 
-    def test_environment_defaults_to_development(self):
-        """Test that environment defaults to development."""
-        settings = Settings()
-        assert settings.environment in ("development", "staging", "production")
-
     def test_log_level_valid(self):
         """Test that log level is valid."""
         settings = Settings()
@@ -31,7 +26,7 @@ class TestSettingsDefaults:
     def test_market_provider_defaults_to_yahoo(self):
         """Test that market provider defaults are set."""
         settings = Settings()
-        assert settings.market_provider == "yahoo"
+        assert settings.market_data_provider == "yahoo"
 
 
 class TestSettingsValidation:
@@ -108,15 +103,6 @@ class TestSettingsEnvironmentOverrides:
         settings = get_settings()
 
         assert settings.database_url == test_url
-
-    def test_environment_from_env(self, monkeypatch):
-        """Test that ENVIRONMENT env var overrides default."""
-        monkeypatch.setenv("ENVIRONMENT", "production")
-
-        get_settings.cache_clear()
-        settings = get_settings()
-
-        assert settings.environment == "production"
 
 
 class TestSettingsJSONEncoders:

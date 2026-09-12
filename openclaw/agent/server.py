@@ -19,11 +19,11 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
-# Models from environment
-AI_MODEL_MID = os.getenv("AI_MODEL_MID", "claude-opus-5")
+# Configuration from environment
+AI_MODEL = os.getenv("AI_MODEL", "claude-opus-5")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 WOLFIERO_API_URL = os.getenv("WOLFIERO_API_URL", "http://wolfiero-api:8000")
-WOLFIERO_API_KEY = os.getenv("WOLFIERO_API_KEY", "dev-key")
+WOLFIERO_API_KEY = os.getenv("WOLFIERO_API_KEY", "prod-key")
 
 # Initialize FastAPI
 app = FastAPI(
@@ -123,7 +123,7 @@ async def chat(message: Message) -> AgentResponse:
         logger.info(f"Agent iteration {iteration + 1}")
 
         response = client.messages.create(
-            model=AI_MODEL_MID,
+            model=AI_MODEL,
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
@@ -194,7 +194,7 @@ async def health() -> dict:
     return {
         "status": "ok",
         "service": "openclaw-agent",
-        "model": AI_MODEL_MID,
+        "model": AI_MODEL,
     }
 
 
@@ -264,7 +264,7 @@ async def health_deep() -> dict:
         "openclaw": "ok",
         "wolfiero_api": "ok" if api_ok else "unreachable",
         "telegram": "ok" if telegram_ok else "disabled" if not telegram_adapter else "offline",
-        "model": AI_MODEL_MID,
+        "model": AI_MODEL,
         "grounding": {
             "mode": GROUNDING_GUARD_MODE,
             "violations_today": GROUNDING_VIOLATIONS_TODAY,

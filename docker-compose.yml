@@ -28,10 +28,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-wolfiero}:${DB_PASSWORD:-wolfiero}@postgres:5432/${DB_NAME:-wolfiero}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
-      # Add more env vars as needed
     ports:
       - "8000:8000"
     depends_on:
@@ -57,14 +55,13 @@ services:
       dockerfile: Dockerfile
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
       WOLFIERO_API_URL: http://wolfiero-api:8000
-      WOLFIERO_API_KEY: ${WOLFIERO_API_KEY:-dev-key}
-      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      WOLFIERO_API_KEY: ${WOLFIERO_API_KEY:-prod-key}
       AI_API_KEY: ${AI_API_KEY}
-      AI_MODEL_CHEAP: ${AI_MODEL_CHEAP:-claude-haiku-4-5-20251001}
-      AI_MODEL_MID: ${AI_MODEL_MID:-claude-opus-5}
-      AI_MODEL_STRONG: ${AI_MODEL_STRONG:-claude-opus-5}
+      AI_MODEL: ${AI_MODEL:-claude-opus-5}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS}
+      GROUNDING_GUARD_MODE: ${GROUNDING_GUARD_MODE:-log}
       PYTHONUNBUFFERED: "1"
     # Port 8001 not exposed to host (internal only)
     depends_on:

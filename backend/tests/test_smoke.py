@@ -30,5 +30,4 @@ def test_health_deep_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert "environment" in data
     assert "strategy_version" in data

@@ -15,7 +15,6 @@ class Settings(BaseSettings):
     # Core
     database_url: str
     log_level: str = "INFO"
-    environment: str = "development"
     tz: str = "America/New_York"
 
     # Postgres
@@ -36,10 +35,7 @@ class Settings(BaseSettings):
     # AI
     ai_provider: str = "anthropic"
     ai_api_key: str = ""
-    ai_model_cheap: str = "claude-haiku-4-5-20251001"
-    ai_model_mid: str = "claude-opus-5"
-    ai_model_strong: str = "claude-opus-5"
-    ai_monthly_budget_usd: float = 100.0
+    ai_model: str = "claude-opus-5"
 
     # Telegram
     telegram_bot_token: str = ""
