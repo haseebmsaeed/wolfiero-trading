@@ -30,8 +30,6 @@ COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code
 COPY app/ ./app/
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
 
 # Set environment
 ENV PATH=/home/appuser/.local/bin:$PATH
