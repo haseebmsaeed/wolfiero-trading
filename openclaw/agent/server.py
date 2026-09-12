@@ -3,11 +3,14 @@
 import os
 import json
 import logging
+import asyncio
 from typing import Any
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import anthropic
 import httpx
+
+from .telegram_adapter import TelegramAdapter
 
 # Load configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -26,6 +29,10 @@ app = FastAPI(
     description="AI-powered swing trading assistant",
     version="1.0.0",
 )
+
+# Global state
+telegram_adapter = None
+telegram_task = None
 
 # Initialize Anthropic client
 client = anthropic.Anthropic(api_key=AI_API_KEY)
@@ -187,9 +194,50 @@ async def health() -> dict:
     }
 
 
+@app.on_event("startup")
+async def startup():
+    """Start Telegram polling on app startup."""
+    global telegram_adapter, telegram_task
+
+    if not os.getenv("TELEGRAM_BOT_TOKEN"):
+        logger.warning("TELEGRAM_BOT_TOKEN not set, Telegram bot disabled")
+        return
+
+    logger.info("Starting Telegram bot adapter...")
+    telegram_adapter = TelegramAdapter(agent_chat_handler=chat_internal)
+    telegram_task = asyncio.create_task(telegram_adapter.start())
+    logger.info("Telegram bot started")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Stop Telegram polling on app shutdown."""
+    global telegram_adapter, telegram_task
+
+    if telegram_adapter:
+        await telegram_adapter.stop()
+        if telegram_task:
+            await telegram_task
+
+
+async def chat_internal(chat_id: str, user_id: str, text: str) -> str:
+    """Internal chat handler (used by Telegram adapter)."""
+    response = await chat(
+        Message(
+            chat_id=chat_id,
+            user_id=user_id,
+            text=text,
+            conversation_id=f"tg-{chat_id}",
+        )
+    )
+    return response.reply
+
+
 @app.get("/health/deep")
 async def health_deep() -> dict:
     """Deep health check."""
+    global telegram_adapter, telegram_task
+
     api_ok = False
     try:
         response = await http_client.get("/health")
@@ -197,10 +245,17 @@ async def health_deep() -> dict:
     except Exception as e:
         logger.warning(f"API health check failed: {e}")
 
+    telegram_ok = False
+    if telegram_adapter:
+        telegram_ok = telegram_adapter.running and (
+            telegram_task is None or not telegram_task.done()
+        )
+
     return {
-        "status": "healthy" if api_ok else "degraded",
+        "status": "healthy" if (api_ok and (not telegram_adapter or telegram_ok)) else "degraded",
         "openclaw": "ok",
         "wolfiero_api": "ok" if api_ok else "unreachable",
+        "telegram": "ok" if telegram_ok else "disabled" if not telegram_adapter else "offline",
         "model": AI_MODEL_MID,
     }
 
