@@ -21,37 +21,37 @@ from app.services.scanner import ScannerService
 from app.services.universe import UniverseService
 
 
-def get_stock_repository():
+def get_stock_repository() -> StockRepository:
     """Get StockRepository."""
     client = get_firestore_client()
     return StockRepository(client)
 
 
-def get_price_history_repository():
+def get_price_history_repository() -> PriceHistoryRepository:
     """Get PriceHistoryRepository."""
     client = get_firestore_client()
     return PriceHistoryRepository(client)
 
 
-def get_strategy_version_repository():
+def get_strategy_version_repository() -> StrategyVersionRepository:
     """Get StrategyVersionRepository."""
     client = get_firestore_client()
     return StrategyVersionRepository(client)
 
 
-def get_universe_membership_repository():
+def get_universe_membership_repository() -> UniverseMembershipRepository:
     """Get UniverseMembershipRepository."""
     client = get_firestore_client()
     return UniverseMembershipRepository(client)
 
 
-def get_scan_run_repository():
+def get_scan_run_repository() -> ScanRunRepository:
     """Get ScanRunRepository."""
     client = get_firestore_client()
     return ScanRunRepository(client)
 
 
-def get_candidate_repository():
+def get_candidate_repository() -> CandidateRepository:
     """Get CandidateRepository."""
     client = get_firestore_client()
     return CandidateRepository(client)

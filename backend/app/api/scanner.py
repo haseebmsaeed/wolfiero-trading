@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/scanner", tags=["scanner"])
 async def run_scan(
     trade_date: date | None = None,
     scanner: ScannerService = Depends(get_scanner_service),
-):
+) -> dict:
     """Trigger a market scan for a specific date.
 
     Returns:
@@ -50,7 +50,7 @@ async def run_scan(
 async def get_scan_run(
     run_id: str,
     scanner: ScannerService = Depends(get_scanner_service),
-):
+) -> dict:
     """Get details of a scan run."""
     try:
         result = await scanner.get_scan_run(run_id)
@@ -73,7 +73,7 @@ async def get_candidates(
     limit: int = 20,
     include_vetoed: bool = False,
     scanner: ScannerService = Depends(get_scanner_service),
-):
+) -> dict:
     """Get ranked candidates from the latest scan.
 
     Args:

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 async def refresh_universe(
     trade_date: date | None = None,
     universe: UniverseService = Depends(get_universe_service),
-):
+) -> dict:
     """Manually trigger universe refresh.
 
     Args:
@@ -38,7 +38,7 @@ async def refresh_universe(
 @router.get("/universe/stats")
 async def get_universe_stats(
     universe: UniverseService = Depends(get_universe_service),
-):
+) -> dict:
     """Get current universe statistics.
 
     Returns:
