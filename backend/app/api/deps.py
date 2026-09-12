@@ -64,7 +64,7 @@ async def get_market_data_service(
     """Get MarketDataService with dependencies."""
     settings = get_settings()
     provider_factory = get_provider_factory(settings.market_data_provider)
-    return MarketDataService(provider_factory, stock_repo, price_repo)
+    return MarketDataService(provider_factory, stock_repo, price_repo)  # type: ignore
 
 
 async def get_universe_service(

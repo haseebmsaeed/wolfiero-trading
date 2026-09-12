@@ -49,7 +49,7 @@ class ScoringService:
     def __init__(self, weights: dict | None = None):
         """Initialize with optional custom weights."""
         if weights:
-            self.WEIGHTS = {k: Decimal(str(v)) for k, v in weights.items()}
+            self.WEIGHTS = {k: Decimal(str(v)) for k, v in weights.items()}  # type: ignore
 
     def score_candidate(
         self,

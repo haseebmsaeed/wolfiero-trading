@@ -14,7 +14,7 @@ class UniverseMembershipRepository:
 
     async def create(self, data: dict[str, object]) -> str:
         """Create a new membership change record. Returns the auto-generated ID."""
-        doc_ref = await self.collection.add(data)
+        doc_ref = await self.collection.add(data)  # type: ignore
         return str(doc_ref.id)
 
     async def list_by_symbol_date(self, symbol: str, refresh_date: date) -> list[dict[str, object]]:
