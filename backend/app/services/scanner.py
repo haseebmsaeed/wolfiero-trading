@@ -416,25 +416,27 @@ class ScannerService:
             # Resistance: highest high in last 60 bars
             resistance = high.iloc[-60:].max()
 
-            # Check if recent bars approaching or breaking resistance
-            recent_high = high.iloc[-1]
-            if recent_high >= resistance * Decimal("0.98"):
+            # Check if at resistance (within 2% above)
+            current_close = bars_df["Close"].iloc[-1]
+            if current_close >= resistance * 0.98:
                 # Volume confirmation
                 vol_avg = volume.iloc[-20:].mean()
                 vol_ratio = volume.iloc[-1] / vol_avg if vol_avg > 0 else 1
 
-                # Quality score based on volume
-                quality = Decimal(str(min(1.0, vol_ratio / 1.3)))
+                # Base quality: if volume >= 1.3x, quality score
+                if vol_ratio >= 1.3:
+                    quality = Decimal("0.75")
+                else:
+                    quality = Decimal("0.50")
                 return quality
 
-            return Decimal("0")
+            return Decimal("0.25")
         except Exception:
-            return Decimal("0")
+            return Decimal("0.25")
 
     async def _detect_pullback(self, bars_df: pd.DataFrame) -> Decimal:
         """Detect pullback setup quality."""
         try:
-            # Placeholder implementation
             close = bars_df["Close"]
             volume = bars_df["Volume"]
             ema_20 = indicators.ema(close, 20)
@@ -449,16 +451,20 @@ class ScannerService:
                     (recent_high - close.iloc[-1]) / (recent_high - support) * 100
                 )
                 if 3 <= retracement_pct <= 15:
-                    # Volume contraction on pullback
+                    # Volume contraction on pullback - strong signal
                     vol_avg_20 = volume.iloc[-20:].mean()
                     vol_avg_3 = volume.iloc[-3:].mean()
                     if vol_avg_3 < vol_avg_20:
-                        quality = Decimal(str(min(1.0, retracement_pct / 15)))
+                        quality = Decimal(str(min(1.0, 0.8)))
+                        return quality
+                    else:
+                        # No volume contraction but right retracement
+                        quality = Decimal("0.55")
                         return quality
 
-            return Decimal("0")
+            return Decimal("0.20")
         except Exception:
-            return Decimal("0")
+            return Decimal("0.20")
 
     async def _detect_consolidation(self, bars_df: pd.DataFrame) -> Decimal:
         """Detect consolidation/coil setup quality."""
@@ -537,13 +543,13 @@ class ScannerService:
         include_vetoed: bool = False,
     ) -> list[dict]:
         """Get candidates from a scan on a given date."""
-        result = await self.db.execute(
-            select(Candidate)
-            .where(Candidate.trade_date == trade_date)
-            .where(Candidate.is_vetoed == (not include_vetoed))
-            .order_by(Candidate.rank)
-            .limit(limit)
-        )
+        query = select(Candidate).where(Candidate.trade_date == trade_date)
+
+        if not include_vetoed:
+            query = query.where(Candidate.is_vetoed == False)
+
+        query = query.order_by(Candidate.rank).limit(limit)
+        result = await self.db.execute(query)
         candidates = result.scalars().all()
 
         return [
@@ -602,6 +608,18 @@ class ScannerService:
                     logger.warning("stage5_no_stock", symbol=symbol)
                     continue
 
+                # Convert score breakdown to JSON-serializable dict
+                score_breakdown_dict = {
+                    name: {
+                        "raw": float(c.raw),
+                        "normalized": float(c.normalized),
+                        "weight": float(c.weight),
+                        "contribution": float(c.contribution),
+                    }
+                    for name, c in score_breakdown._asdict().items()
+                    if name != "total_score"
+                }
+
                 # Create Candidate record
                 candidate = Candidate(
                     run_id=run_id,
@@ -609,7 +627,7 @@ class ScannerService:
                     symbol=symbol,
                     trade_date=trade_date,
                     score=score_breakdown.total_score,
-                    score_breakdown=score_breakdown._asdict(),
+                    score_breakdown=score_breakdown_dict,
                     setup_type=setup_type,
                     setup_quality=setup_quality,
                     technical_snapshot={
