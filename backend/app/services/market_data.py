@@ -1,17 +1,14 @@
 """Market data service — fetch, validate, and cache OHLCV data."""
 
 from datetime import date, datetime, timedelta
-from decimal import Decimal
-from typing import Optional
 
 import pandas as pd
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.logging import get_logger
 from app.models import PriceHistory, Stock
 from app.providers.market_data import (
-    DataQualityError,
     Interval,
     MarketDataProvider,
     SymbolNotFoundError,
@@ -24,7 +21,7 @@ logger = get_logger(__name__)
 class ValidationResult:
     """Result of OHLCV validation."""
 
-    def __init__(self, is_valid: bool = True, errors: Optional[list[str]] = None):
+    def __init__(self, is_valid: bool = True, errors: list[str] | None = None):
         """Initialize validation result.
 
         Args:
@@ -240,10 +237,10 @@ class MarketDataService:
 
         df = pd.DataFrame(
             {
-                "Open": [Decimal(r.open) for r in rows],
-                "High": [Decimal(r.high) for r in rows],
-                "Low": [Decimal(r.low) for r in rows],
-                "Close": [Decimal(r.close) for r in rows],
+                "Open": [float(r.open) for r in rows],
+                "High": [float(r.high) for r in rows],
+                "Low": [float(r.low) for r in rows],
+                "Close": [float(r.close) for r in rows],
                 "Volume": [r.volume for r in rows],
             },
             index=pd.DatetimeIndex([r.trade_date for r in rows]),
@@ -257,10 +254,10 @@ class MarketDataService:
         """Convert OHLCVFrame to pandas DataFrame."""
         return pd.DataFrame(
             {
-                "Open": [Decimal(b.open) for b in frame.bars],
-                "High": [Decimal(b.high) for b in frame.bars],
-                "Low": [Decimal(b.low) for b in frame.bars],
-                "Close": [Decimal(b.close) for b in frame.bars],
+                "Open": [float(b.open) for b in frame.bars],
+                "High": [float(b.high) for b in frame.bars],
+                "Low": [float(b.low) for b in frame.bars],
+                "Close": [float(b.close) for b in frame.bars],
                 "Volume": [b.volume for b in frame.bars],
             },
             index=pd.DatetimeIndex([b.trade_date for b in frame.bars]),

@@ -1,13 +1,12 @@
 """Abstract base class for market data providers."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from datetime import date
-from typing import Sequence
 
 from app.schemas.market_data import (
     EarningsEvent,
     Fundamentals,
-    OHLCVBar,
     OHLCVFrame,
     ProviderHealth,
     Quote,
@@ -38,7 +37,6 @@ class MarketDataProvider(ABC):
     @abstractmethod
     def name(self) -> str:
         """Provider name (e.g. 'yahoo', 'alpaca', 'polygon')."""
-        pass
 
     @abstractmethod
     async def get_quote(self, symbol: str) -> Quote:
@@ -54,7 +52,6 @@ class MarketDataProvider(ABC):
             SymbolNotFoundError: Symbol not found
             ProviderError: API error or rate limit
         """
-        pass
 
     @abstractmethod
     async def get_history(
@@ -82,7 +79,6 @@ class MarketDataProvider(ABC):
             DataQualityError: Bad bars (NaN, inverted high/low, etc.)
             ProviderError: API error or rate limit
         """
-        pass
 
     @abstractmethod
     async def get_history_batch(
@@ -110,7 +106,6 @@ class MarketDataProvider(ABC):
         Raises:
             ProviderError: Fatal error (credentials, network, etc.)
         """
-        pass
 
     @abstractmethod
     async def get_fundamentals(self, symbol: str) -> Fundamentals:
@@ -126,7 +121,6 @@ class MarketDataProvider(ABC):
             SymbolNotFoundError: Symbol not found
             ProviderError: API error
         """
-        pass
 
     @abstractmethod
     async def get_earnings_calendar(
@@ -144,7 +138,6 @@ class MarketDataProvider(ABC):
         Returns:
             List of EarningsEvent (may be empty)
         """
-        pass
 
     @abstractmethod
     async def health(self) -> ProviderHealth:
@@ -153,35 +146,29 @@ class MarketDataProvider(ABC):
         Returns:
             ProviderHealth status
         """
-        pass
 
 
 # Exceptions
 class ProviderError(Exception):
     """Base exception for provider errors."""
 
-    pass
 
 
 class SymbolNotFoundError(ProviderError):
     """Symbol not found."""
 
-    pass
 
 
 class InsufficientHistoryError(ProviderError):
     """Not enough historical data."""
 
-    pass
 
 
 class DataQualityError(ProviderError):
     """Data quality validation failed."""
 
-    pass
 
 
 class RateLimitError(ProviderError):
     """Rate limit hit."""
 
-    pass

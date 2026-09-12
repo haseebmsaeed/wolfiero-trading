@@ -1,23 +1,19 @@
 """Stock and market data models."""
 
-from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     Column,
     Date,
     DateTime,
-    Enum,
     Index,
-    Integer,
-    JSON,
     Numeric,
     String,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
 
 from app.db import Base, TimestampMixin
 

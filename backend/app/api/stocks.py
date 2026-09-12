@@ -1,7 +1,5 @@
 """Stock analysis endpoints."""
 
-from datetime import date, timedelta
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,9 +7,8 @@ from app.db import session
 from app.logging import get_logger
 from app.providers.market_data import get_provider_factory
 from app.services.market_data import MarketDataService
-from app.services.technical_analysis import TechnicalAnalysisService
 from app.services.setups import detect_best_setup
-from app.schemas.technical import TechnicalSnapshot
+from app.services.technical_analysis import TechnicalAnalysisService
 
 logger = get_logger(__name__)
 
@@ -40,9 +37,9 @@ async def analyze_stock(
         # Load bars from DB (or fetch if needed)
         try:
             bars = await market_data.get_bars(symbol, days=400)
-        except Exception as e:
+        except ValueError as e:
             logger.error("bars_fetch_failed", symbol=symbol, error=str(e))
-            raise HTTPException(status_code=404, detail=f"No data for symbol {symbol}")
+            raise HTTPException(status_code=404, detail=f"No data for symbol {symbol}") from e
 
         # Technical analysis
         analysis_service = TechnicalAnalysisService(symbol, bars)
@@ -67,6 +64,6 @@ async def analyze_stock(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except ValueError as e:
         logger.error("analyze_failed", symbol=symbol, error=str(e))
-        raise HTTPException(status_code=500, detail="Analysis failed")
+        raise HTTPException(status_code=500, detail="Analysis failed") from e

@@ -1,6 +1,5 @@
 """Technical analysis service — turn indicators into trading signals."""
 
-from datetime import date
 from decimal import Decimal
 
 import pandas as pd
@@ -228,11 +227,11 @@ class TechnicalAnalysisService:
         # Note: This requires SPY data which isn't available in the DataFrame
         # In real implementation, we'd compute against SPY bars from the database
         return RelativeStrengthMetrics(
-            vs_spy_1m=Decimal("0"),
-            vs_spy_3m=Decimal("0"),
-            vs_spy_6m=Decimal("0"),
+            vs_spy_1m=Decimal(0),
+            vs_spy_3m=Decimal(0),
+            vs_spy_6m=Decimal(0),
             percentile_rank=50,
-            vs_sector_3m=Decimal("0"),
+            vs_sector_3m=Decimal(0),
         )
 
     def _find_support_resistance(self) -> tuple[list[SupportLevel], list[ResistanceLevel]]:

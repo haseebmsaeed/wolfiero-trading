@@ -82,7 +82,6 @@ class Settings(BaseSettings):
 
         Will load YAML and assert weights sum to 1.0.
         """
-        pass
 
     def __post_init__(self) -> None:
         """Post-init validation."""

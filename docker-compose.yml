@@ -54,7 +54,7 @@ services:
       context: ./openclaw
       dockerfile: Dockerfile
     environment:
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_LEVEL: "INFO"
       WOLFIERO_API_URL: http://wolfiero-api:8000
       WOLFIERO_API_KEY: ${WOLFIERO_API_KEY:-prod-key}
       AI_PROVIDER: ${AI_PROVIDER:-claude}

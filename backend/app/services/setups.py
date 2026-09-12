@@ -69,7 +69,7 @@ def detect_best_setup(snapshot: TechnicalSnapshot) -> SetupResult:
     elif snapshot.trend.direction == "DOWNTREND":
         quality = Decimal(str(snapshot.trend.strength))
 
-        description = f"Downtrend intact: close < 50-SMA, MA stack inverted"
+        description = "Downtrend intact: close < 50-SMA, MA stack inverted"
 
         return SetupResult(
             setup_type="DOWNTREND",
@@ -83,7 +83,7 @@ def detect_best_setup(snapshot: TechnicalSnapshot) -> SetupResult:
     else:
         return SetupResult(
             setup_type="NONE",
-            quality=Decimal("0"),
+            quality=Decimal(0),
             direction="FLAT",
             description="No clear setup detected",
             triggered=False,

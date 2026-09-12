@@ -1,11 +1,11 @@
 """Yahoo Finance market data provider."""
 
 import asyncio
+from collections.abc import Sequence
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Sequence
+from typing import Any
 
-import httpx
 import yfinance as yf
 
 from app.logging import get_logger
@@ -13,14 +13,16 @@ from app.providers.market_data.base import (
     DataQualityError,
     Interval,
     MarketDataProvider,
-    OHLCVFrame,
-    OHLCVBar,
     ProviderError,
-    ProviderHealth,
-    Quote,
     SymbolNotFoundError,
+)
+from app.schemas.market_data import (
     EarningsEvent,
     Fundamentals,
+    OHLCVBar,
+    OHLCVFrame,
+    ProviderHealth,
+    Quote,
 )
 
 logger = get_logger(__name__)
@@ -97,7 +99,7 @@ class YahooProvider(MarketDataProvider):
     ) -> OHLCVFrame:
         """Get historical OHLCV data."""
         try:
-            ticker = yf.Ticker(symbol, session=yf.utils.get_clean_session())
+            ticker = yf.Ticker(symbol)
             df = ticker.history(start=start, end=end, interval=interval, auto_adjust=True)
 
             if df.empty:

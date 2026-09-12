@@ -2,9 +2,8 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Quote(BaseModel):
@@ -57,11 +56,11 @@ class Fundamentals(BaseModel):
     """Stock fundamentals."""
 
     symbol: str
-    market_cap: Optional[Decimal] = None
-    shares_outstanding: Optional[int] = None
-    pe_ratio: Optional[Decimal] = None
-    dividend_yield: Optional[Decimal] = None
-    eps: Optional[Decimal] = None
+    market_cap: Decimal | None = None
+    shares_outstanding: int | None = None
+    pe_ratio: Decimal | None = None
+    dividend_yield: Decimal | None = None
+    eps: Decimal | None = None
 
     class Config:
         json_encoders = {Decimal: float}
@@ -74,10 +73,10 @@ class EarningsEvent(BaseModel):
     earnings_date: date
     time_of_day: str = "UNKNOWN"  # BMO, AMC, UNKNOWN
     is_confirmed: bool = False
-    fiscal_period: Optional[str] = None
-    eps_estimate: Optional[Decimal] = None
-    eps_actual: Optional[Decimal] = None
-    surprise_pct: Optional[Decimal] = None
+    fiscal_period: str | None = None
+    eps_estimate: Decimal | None = None
+    eps_actual: Decimal | None = None
+    surprise_pct: Decimal | None = None
 
     class Config:
         json_encoders = {Decimal: float}
@@ -88,8 +87,8 @@ class ProviderHealth(BaseModel):
 
     provider_name: str
     is_healthy: bool
-    error: Optional[str] = None
-    last_error_at: Optional[datetime] = None
+    error: str | None = None
+    last_error_at: datetime | None = None
     request_count: int = 0
     error_count: int = 0
-    rate_limit_remaining: Optional[int] = None
+    rate_limit_remaining: int | None = None

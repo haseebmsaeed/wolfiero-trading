@@ -3,7 +3,6 @@
 import contextvars
 import logging
 import sys
-import uuid
 from typing import Any
 
 import structlog

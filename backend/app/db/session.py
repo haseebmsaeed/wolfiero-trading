@@ -11,7 +11,7 @@ def get_engine():
     settings = get_settings()
     return create_async_engine(
         settings.database_url,
-        echo=settings.environment == "development",
+        echo=settings.log_level == "DEBUG",
         future=True,
     )
 
