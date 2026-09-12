@@ -1,81 +1,46 @@
-"""Scanner and universe models."""
+"""Scanner and universe document shapes for Firestore."""
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    Boolean,
-    Column,
-    Date,
-    DateTime,
-    Index,
-    Integer,
-    Numeric,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any, Optional
 
-from app.db import Base, TimestampMixin
+from pydantic import BaseModel
 
 
-class UniverseMembership(Base, TimestampMixin):
-    """Track universe membership changes — when stocks enter/exit and why."""
+class UniverseMembership(BaseModel):
+    """Firestore document: universe_membership/{id}. Append-only audit log of universe changes."""
 
-    __tablename__ = "universe_membership"
-
-    id = Column(BigInteger, primary_key=True)
-    stock_id = Column(BigInteger, nullable=False, index=True)
-    symbol = Column(String(16), nullable=False, index=True)
-    action = Column(String(16), nullable=False)  # ENTERED, EXITED
-    reason = Column(Text, nullable=False)
-    refresh_date = Column(Date, nullable=False, index=True)
-
-    __table_args__ = (
-        Index("idx_universe_membership_symbol_date", "symbol", "refresh_date"),
-    )
+    id: str
+    symbol: str
+    action: str
+    reason: str
+    refresh_date: date
 
 
-class ScanRun(Base, TimestampMixin):
-    """Scan execution record with funnel metrics."""
+class ScanRun(BaseModel):
+    """Firestore document: scan_runs/{run_id}. One scan execution with funnel metrics."""
 
-    __tablename__ = "scan_runs"
-
-    id = Column(BigInteger, primary_key=True)
-    run_id = Column(String(64), unique=True, nullable=False, index=True)
-    trade_date = Column(Date, nullable=False, index=True)
-    strategy_version = Column(String(32), nullable=False)
-    status = Column(String(32), default="RUNNING")  # RUNNING, COMPLETED, FAILED
-    funnel = Column(JSON, nullable=False)  # Per-stage counts and reasons
-    data_coverage_pct = Column(Numeric(5, 2))
-    stage_timings = Column(JSON)  # Seconds per stage
-    error_message = Column(Text)
-
-    __table_args__ = (
-        Index("idx_scan_runs_trade_date_version", "trade_date", "strategy_version"),
-    )
+    run_id: str
+    trade_date: date
+    strategy_version: str
+    status: str = "RUNNING"
+    funnel: dict[str, Any]
+    data_coverage_pct: Optional[Decimal] = None
+    stage_timings: Optional[dict[str, Any]] = None
+    error_message: Optional[str] = None
 
 
-class Candidate(Base, TimestampMixin):
-    """Immutable point-in-time scan result. Never UPDATE."""
+class Candidate(BaseModel):
+    """Firestore subcollection: scan_runs/{run_id}/candidates/{symbol}. Immutable point-in-time scan result."""
 
-    __tablename__ = "candidates"
-
-    id = Column(BigInteger, primary_key=True)
-    run_id = Column(String(64), nullable=False, index=True)
-    stock_id = Column(BigInteger, nullable=False, index=True)
-    symbol = Column(String(16), nullable=False, index=True)
-    trade_date = Column(Date, nullable=False, index=True)
-    rank = Column(Integer)  # Final rank, 1–N
-    score = Column(Numeric(5, 2), nullable=False)
-    score_breakdown = Column(JSON, nullable=False)  # Component breakdown
-    setup_type = Column(String(32), nullable=False)
-    setup_quality = Column(Numeric(3, 2), nullable=False)
-    technical_snapshot = Column(JSON, nullable=False)  # Full TechnicalSnapshot
-    is_vetoed = Column(Boolean, default=False)
-    veto_reasons = Column(JSON)  # List of reasons if vetoed
-
-    __table_args__ = (
-        Index("idx_candidates_run_id", "run_id"),
-        Index("idx_candidates_symbol_date", "symbol", "trade_date"),
-        UniqueConstraint("run_id", "stock_id", name="uq_candidates_run_stock"),
-    )
+    run_id: str
+    symbol: str
+    trade_date: date
+    rank: Optional[int] = None
+    score: Decimal
+    score_breakdown: dict[str, Any]
+    setup_type: str
+    setup_quality: Decimal
+    technical_snapshot: dict[str, Any]
+    is_vetoed: bool = False
+    veto_reasons: Optional[list[str]] = None
