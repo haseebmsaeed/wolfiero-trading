@@ -1,6 +1,7 @@
 """Firestore-backed PriceHistory repository."""
 
 from datetime import date
+from typing import Any
 
 import pandas as pd
 from google.cloud.firestore import AsyncClient

@@ -1,6 +1,7 @@
 """Firestore-backed Candidate repository."""
 
 from datetime import date
+from typing import Any
 
 from google.cloud.firestore import AsyncClient
 
