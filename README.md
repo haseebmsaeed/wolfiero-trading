@@ -4,7 +4,9 @@ A decision-support system for discretionary swing traders. Scans 3,000 liquid US
 ranks candidates using deterministic quantitative logic, enriches with news and catalysts, and
 delivers a trade plan to your phone every morning.
 
-**Status:** Under development (Epics 0–1 in progress)
+**Status:** Production system (Firestore + Cloud Run)  
+**Deployment:** Google Cloud Run (serverless)  
+**Database:** Google Firestore (zero monthly cost for this workload)
 
 ## What it does
 
@@ -18,7 +20,7 @@ delivers a trade plan to your phone every morning.
 
 **It does NOT:** place trades, manage money, predict prices, or require a broker API key.
 
-## Quick start
+## Quick start (local dev)
 
 ```bash
 # Clone and navigate
@@ -28,17 +30,23 @@ cd wolfiero-trading
 # Copy environment template
 cp .env.example .env
 
-# Start the stack (Postgres + API)
+# Build and start (Firestore emulator + API)
+make build
 make up
 
-# Run migrations
-make migrate
+# Load initial data (strategy version + sample stocks)
+make seed
+
+# Run test suite (full)
+make test
 
 # Verify health
-make smoke
+curl http://localhost:8000/health
 ```
 
-Then `curl http://localhost:8000/health` to confirm the API is running.
+The API listens on `http://localhost:8000`. Firestore emulator runs in Docker (port 8080).
+
+For **production deployment**, see `docs/deployment.md`.
 
 ## Documentation
 
@@ -46,13 +54,14 @@ Then `curl http://localhost:8000/health` to confirm the API is running.
 
 1. [`docs/README.md`](docs/README.md) — navigation and core principles
 2. [`docs/01-product-requirements.md`](docs/01-product-requirements.md) — what and why
-3. [`docs/02-architecture.md`](docs/02-architecture.md) — how it is built
-4. [`docs/03-data-model.md`](docs/03-data-model.md) — database schema
-5. [`docs/04-api-contract.md`](docs/04-api-contract.md) — every HTTP endpoint
-6. [`docs/05-scanner-and-scoring-spec.md`](docs/05-scanner-and-scoring-spec.md) — the funnel
-7. [`docs/06-news-and-catalyst-spec.md`](docs/06-news-and-catalyst-spec.md) — how news is used
-8. [`docs/07-risk-and-position-sizing.md`](docs/07-risk-and-position-sizing.md) — stops, sizing, guardrails
-9. [`docs/stories/README.md`](docs/stories/README.md) — implementation backlog (53 stories, 9 epics)
+3. [`docs/02-architecture.md`](docs/02-architecture.md) — how it is built (Firestore, Cloud Run)
+4. [`docs/deployment.md`](docs/deployment.md) — **deploying to production**
+5. [`docs/03-data-model.md`](docs/03-data-model.md) — Firestore collections and document shapes
+6. [`docs/04-api-contract.md`](docs/04-api-contract.md) — every HTTP endpoint
+7. [`docs/05-scanner-and-scoring-spec.md`](docs/05-scanner-and-scoring-spec.md) — the funnel
+8. [`docs/06-news-and-catalyst-spec.md`](docs/06-news-and-catalyst-spec.md) — how news is used
+9. [`docs/07-risk-and-position-sizing.md`](docs/07-risk-and-position-sizing.md) — stops, sizing, guardrails
+10. [`docs/stories/README.md`](docs/stories/README.md) — implementation backlog (53 stories, 9 epics)
 
 ## Development
 
@@ -71,29 +80,33 @@ make shell        # Enter API container
 ## Architecture at a glance
 
 ```
-Telegram → OpenClaw (agent) → FastAPI (backend) → PostgreSQL
+Telegram → OpenClaw (agent) → FastAPI (backend) → Firestore
    ↓           ↓                  ↓                    ↓
   I/O      Orchestration    Business logic      Durable state
-           Intent → tools   Calculations
+           Intent → tools   Calculations        (append-only)
                           Validation
                           Persistence
+                          
+                       [Cloud Run]
+                      (serverless, scale-to-zero)
 ```
 
-**Core principle:** Python computes, Postgres remembers, AI interprets, Telegram delivers.
+**Core principle:** Python computes, Firestore remembers, AI interprets, Telegram delivers.
 
 - **LLM never does arithmetic.** Services compute indicators, rank candidates, size positions.
   The agent reads structured data and produces natural-language output.
 - **Every recommendation is frozen** with full context (prices, regime, model, prompt version)
   so later analysis is honest and traceable.
 - **Failure is visible.** A missing report generates an alert. Bad data raises, never silences.
+- **Repository pattern.** All database access through typed repositories. Unit tests inject fakes (no Docker). Integration tests use Firestore emulator.
 
 ## Project structure
 
 ```
 wolfiero-trading/
-├── .claude/CLAUDE.md              Project guidelines for Claude Code
+├── .claude/CLAUDE.md              Project guidelines (production-only system)
 ├── .gitignore
-├── docker-compose.yml             Full stack definition
+├── docker-compose.yml             Firestore emulator + API
 ├── .env.example                   Environment template
 ├── Makefile                       Common tasks
 ├── pyproject.toml                 Project config
@@ -102,20 +115,26 @@ wolfiero-trading/
 │   ├── Dockerfile
 │   ├── app/
 │   │   ├── main.py                Factory + lifespan
-│   │   ├── config.py              Settings (typed)
+│   │   ├── config.py              Settings (typed, Firestore)
 │   │   ├── logging.py             Structured logging
-│   │   ├── api/                   HTTP endpoints (thin)
+│   │   ├── api/
+│   │   │   ├── deps.py            Dependency injection
+│   │   │   ├── scanner.py
+│   │   │   ├── admin.py
+│   │   │   └── stocks.py
 │   │   ├── services/              All business logic
+│   │   ├── repositories/          Firestore access layer (6 repos)
 │   │   ├── providers/             Vendor adapters (market data, news, AI)
-│   │   ├── models/                SQLAlchemy ORM
-│   │   ├── schemas/               Pydantic request/response DTOs
-│   │   ├── jobs/                  Scheduled pipelines
+│   │   ├── models/                Pydantic document shapes
+│   │   ├── schemas/               Request/response DTOs
+│   │   ├── jobs/                  Scheduled pipelines (future)
 │   │   └── db/
-│   │       ├── session.py
-│   │       └── migrations/        Alembic
+│   │       ├── firestore.py       Async Firestore client
+│   │       ├── money.py           Decimal ↔ scaled-int conversion
+│   │       └── seed.py            Firestore seeding
 │   └── tests/
-│       ├── unit/                  Logic in isolation
-│       ├── integration/           With DB
+│       ├── unit/                  Pure functions (fakes, no Docker)
+│       ├── integration/           With Firestore emulator
 │       └── fixtures/              Golden data CSVs
 │
 ├── openclaw/                      Agent runtime (placeholder)
@@ -126,8 +145,9 @@ wolfiero-trading/
 │
 └── docs/                          Specifications and stories
     ├── 01-product-requirements.md
-    ├── 02-architecture.md
-    ├── 03-data-model.md
+    ├── 02-architecture.md         (updated: Firestore + Cloud Run)
+    ├── deployment.md              (new: Cloud Run deployment)
+    ├── 03-data-model.md           (Firestore collections)
     ├── 04-api-contract.md
     ├── 05-scanner-and-scoring-spec.md
     ├── 06-news-and-catalyst-spec.md
@@ -159,32 +179,60 @@ Never commit `.env`; it is in `.gitignore`.
 
 ```bash
 # With make (recommended)
-make up && make migrate && make test
+make build          # Build Docker images
+make up             # Start Firestore emulator + API
+make seed           # Load initial data
+make test-unit      # Fast unit tests (no Docker)
+make test           # Full test suite (with Firestore emulator)
 
-# Or with docker-compose directly
-docker compose up -d
-docker compose exec wolfiero-api alembic upgrade head
-docker compose exec wolfiero-api pytest
+# Individual commands
+make logs           # Tail logs
+make shell          # Enter API container
+make down           # Stop containers
+make clean          # Hard reset (remove volumes)
 ```
 
-The API listens on `http://localhost:8000` when published; see `docker-compose.yml` for the port.
+The API listens on `http://localhost:8000`; Firestore emulator on `localhost:8080`. See `docker-compose.yml` for ports.
 
 ## Testing
 
 ```bash
-make test           # Full suite
-make test-unit      # Unit tests only
+make test           # Full suite (against Firestore emulator)
+make test-unit      # Unit tests only (pure functions, fakes, zero Docker)
+make test-integ     # Integration tests only (with Firestore emulator)
 make test-cov       # With coverage report (generates htmlcov/)
+make lint           # ruff + mypy
 ```
 
-Every service is tested in isolation. Integration tests use an ephemeral Postgres. Golden fixtures
-(hand-verified CSVs) are committed alongside tests to catch indicator regressions.
+**Unit tests** use fake in-memory repositories (no Docker, runs in milliseconds).  
+**Integration tests** spin up Firestore emulator via testcontainers.  
+Every service is tested in isolation. Golden fixtures (hand-verified CSVs) are committed alongside tests to catch indicator regressions.
 
-## Deployment
+**Before deploying to production:** Run `make test` (full suite) locally to verify against Firestore emulator.
 
-See `docs/deployment.md` (planned in Epic 0).
+## Production deployment
 
-One VM, one `docker-compose.yml`. Migrations and backups are included.
+**See [`docs/deployment.md`](docs/deployment.md) for the complete guide.**
+
+Summary:
+- **Platform:** Google Cloud Run (serverless containers, scale-to-zero)
+- **Database:** Google Firestore (free tier covers this workload)
+- **Cost:** ~$0/month (within free tier limits)
+
+Pre-deployment checklist:
+- Full test suite passes locally (`make test`)
+- Smoke test succeeds (`make smoke`)
+- All secrets configured (`.env`)
+- Git is clean
+
+Deploy:
+```bash
+gcloud run deploy wolfiero-api \
+  --image gcr.io/$PROJECT_ID/wolfiero-api:latest \
+  --set-env-vars "GCP_PROJECT_ID=$PROJECT_ID,TELEGRAM_BOT_TOKEN=$TOKEN,TELEGRAM_ALLOWED_CHAT_IDS=$CHAT_ID,AI_API_KEY=$API_KEY"
+```
+
+This is a **production-only system** — no separate staging/dev environments. Test locally with Docker + Firestore emulator before deploying.
 
 ## Contributing
 
