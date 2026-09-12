@@ -12,6 +12,7 @@ import httpx
 
 from .telegram_adapter import TelegramAdapter
 from . import tools
+from .grounding_guard import validate_grounding, maybe_append_caveat
 
 # Load configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -36,6 +37,8 @@ telegram_adapter = None
 telegram_task = None
 SYSTEM_PROMPT = None
 PROMPT_VERSION = "v1"
+GROUNDING_VIOLATIONS_TODAY = 0
+GROUNDING_GUARD_MODE = os.getenv("GROUNDING_GUARD_MODE", "log")  # log or block
 
 
 def load_system_prompt():
@@ -114,6 +117,7 @@ async def chat(message: Message) -> AgentResponse:
     # Agentic loop
     max_iterations = 5
     tool_calls_made = []
+    tool_results_collected = []  # For grounding guard validation
 
     for iteration in range(max_iterations):
         logger.info(f"Agent iteration {iteration + 1}")
@@ -134,9 +138,18 @@ async def chat(message: Message) -> AgentResponse:
             text_blocks = [block for block in response.content if block.type == "text"]
             reply = "\n".join(block.text for block in text_blocks)
             logger.info(f"Agent final response: {reply[:200]}...")
+
+            # Validate grounding
+            is_grounded, violations = validate_grounding(reply, tool_results_collected, GROUNDING_GUARD_MODE)
+            if not is_grounded:
+                global GROUNDING_VIOLATIONS_TODAY
+                GROUNDING_VIOLATIONS_TODAY += 1
+                reply = maybe_append_caveat(reply, violations)
+
             return AgentResponse(
                 reply=reply,
                 tool_calls=tool_calls_made,
+                grounding_ok=is_grounded,
             )
 
         # Process tool calls
@@ -151,6 +164,7 @@ async def chat(message: Message) -> AgentResponse:
 
             # Call tool
             tool_result = await call_tool(tool_use.name, tool_use.input)
+            tool_results_collected.append(tool_result)  # For grounding validation
 
             # Add to messages for next iteration
             messages.append({"role": "assistant", "content": response.content})
@@ -251,6 +265,10 @@ async def health_deep() -> dict:
         "wolfiero_api": "ok" if api_ok else "unreachable",
         "telegram": "ok" if telegram_ok else "disabled" if not telegram_adapter else "offline",
         "model": AI_MODEL_MID,
+        "grounding": {
+            "mode": GROUNDING_GUARD_MODE,
+            "violations_today": GROUNDING_VIOLATIONS_TODAY,
+        },
     }
 
 
