@@ -86,7 +86,6 @@ class TechnicalAnalysisService:
 
     def _analyze_trend(self) -> TrendMetrics:
         """Classify trend: uptrend, downtrend, or range."""
-        sma_20 = indicators.sma(self.close, 20)
         sma_50 = indicators.sma(self.close, 50)
         sma_200 = indicators.sma(self.close, 200)
         ema_20 = indicators.ema(self.close, 20)

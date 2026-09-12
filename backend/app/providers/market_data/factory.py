@@ -1,5 +1,7 @@
 """Market data provider factory with failover chain."""
 
+from typing import ClassVar
+
 from app.logging import get_logger
 from app.providers.market_data.base import MarketDataProvider, ProviderError
 from app.providers.market_data.yahoo import YahooProvider
@@ -48,7 +50,7 @@ class CircuitBreaker:
 class ProviderFactory:
     """Factory for creating and managing provider instances."""
 
-    PROVIDERS = {
+    PROVIDERS: ClassVar[dict[str, type[MarketDataProvider]]] = {
         "yahoo": YahooProvider,
     }
 

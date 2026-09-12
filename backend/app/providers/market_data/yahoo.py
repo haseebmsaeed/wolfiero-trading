@@ -223,7 +223,7 @@ class YahooProvider(MarketDataProvider):
         """Check health."""
         try:
             # Quick test: fetch one symbol
-            quote = await self.get_quote("AAPL")
+            await self.get_quote("AAPL")
             return ProviderHealth(
                 provider_name=self.name,
                 is_healthy=True,

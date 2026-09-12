@@ -1,7 +1,7 @@
 """Composite scoring engine for ranking candidates."""
 
 from decimal import Decimal
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 import pandas as pd
 
@@ -36,7 +36,7 @@ class ScoringService:
     """Composite scoring engine implementing the spec formula."""
 
     # Component weights
-    WEIGHTS = {
+    WEIGHTS: ClassVar[dict[str, Decimal]] = {
         "technical": Decimal("0.25"),
         "momentum": Decimal("0.15"),
         "relative_strength": Decimal("0.15"),
@@ -119,7 +119,7 @@ class ScoringService:
             + rr_score * self.WEIGHTS["reward_risk"]
         )
 
-        # Scale to 0–100
+        # Scale to 0-100
         final_score = total * Decimal("100")
 
         # Build breakdown

@@ -1,6 +1,6 @@
 """Database models and helpers."""
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 
 def now_utc() -> datetime:

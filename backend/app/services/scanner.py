@@ -261,8 +261,6 @@ class ScannerService:
                     continue
 
                 close = bars_df["Close"]
-                high = bars_df["High"]
-                low = bars_df["Low"]
 
                 # Compute SMAs and EMA
                 sma_50 = indicators.sma(close, 50)
