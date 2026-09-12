@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.services.scanner import ScannerService
 from app.services.market_data import MarketDataService
+from app.providers.market_data import get_provider_factory
 from app.config import get_settings
 from app.logging import get_logger
 
@@ -33,7 +34,8 @@ async def run_scan(
     if trade_date is None:
         trade_date = date.today()
 
-    market_data_service = MarketDataService(db)
+    provider_factory = get_provider_factory(settings.market_data_provider)
+    market_data_service = MarketDataService(provider_factory, db)
     scanner_service = ScannerService(db, market_data_service)
 
     try:
@@ -58,7 +60,9 @@ async def get_scan_run(
     db: AsyncSession = Depends(get_db),
 ):
     """Get details of a scan run."""
-    market_data_service = MarketDataService(db)
+    settings = get_settings()
+    provider_factory = get_provider_factory(settings.market_data_provider)
+    market_data_service = MarketDataService(provider_factory, db)
     scanner_service = ScannerService(db, market_data_service)
 
     try:
@@ -96,7 +100,9 @@ async def get_candidates(
     if date_param is None:
         date_param = date.today()
 
-    market_data_service = MarketDataService(db)
+    settings = get_settings()
+    provider_factory = get_provider_factory(settings.market_data_provider)
+    market_data_service = MarketDataService(provider_factory, db)
     scanner_service = ScannerService(db, market_data_service)
 
     try:

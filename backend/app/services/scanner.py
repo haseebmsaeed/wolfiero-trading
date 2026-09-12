@@ -196,10 +196,7 @@ class ScannerService:
                 # Check: data freshness
                 last_date = bars[0][2]
                 trading_days_since = len(
-                    self.calendar.sessions[
-                        (self.calendar.sessions > last_date)
-                        & (self.calendar.sessions <= trade_date)
-                    ]
+                    self.calendar.valid_days(start_date=last_date, end_date=trade_date)
                 )
                 if trading_days_since > self.MAX_DATA_STALENESS:
                     stage.dropped_reasons["stale_data"] += 1
