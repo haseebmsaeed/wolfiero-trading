@@ -3,7 +3,7 @@
 import os
 from functools import lru_cache
 
-from google.cloud.firestore_async import AsyncClient
+from google.cloud.firestore import AsyncClient
 
 from app.config import get_settings
 

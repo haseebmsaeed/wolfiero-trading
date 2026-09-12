@@ -1,0 +1,41 @@
+"""Firestore-backed StrategyVersion repository."""
+
+from typing import Optional
+
+from google.cloud.firestore import AsyncClient
+
+from app.models import StrategyVersion
+
+
+class StrategyVersionRepository:
+    """Firestore implementation: stores/retrieves StrategyVersion documents from strategy_versions/{version}."""
+
+    def __init__(self, db: AsyncClient):
+        self.db = db
+        self.collection = db.collection("strategy_versions")
+
+    async def get(self, version: str) -> Optional[dict]:
+        """Get a strategy version by version string."""
+        doc = await self.collection.document(version).get()
+        if doc.exists:
+            data = doc.to_dict()
+            data["version"] = version
+            return data
+        return None
+
+    async def create(self, version: str, data: dict) -> None:
+        """Create a new strategy version (fails if already exists)."""
+        doc = await self.collection.document(version).get()
+        if doc.exists:
+            raise ValueError(f"Strategy version {version} already exists")
+        await self.collection.document(version).set(data)
+
+    async def list_all(self) -> list[dict]:
+        """List all strategy versions (all documents in collection)."""
+        docs = await self.collection.stream()
+        results = []
+        async for doc in docs:
+            data = doc.to_dict()
+            data["version"] = doc.id
+            results.append(data)
+        return results
