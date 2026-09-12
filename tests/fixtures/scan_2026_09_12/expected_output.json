@@ -1,0 +1,76 @@
+{
+  "trade_date": "2026-09-12",
+  "strategy_version": "v1.0.0",
+  "description": "Regression fixture for scanner using 5 test stocks (NVDA, AAPL, TSLA, QQQ, SPY). This dataset exercises all four pipeline stages and should produce exactly the expected funnel counts and candidate output.",
+  "funnel": {
+    "stage1": {
+      "stage": "Stage 1: Universe",
+      "entered": 5,
+      "exited": 0,
+      "survivors": 5,
+      "note": "All 5 symbols are in universe (in_universe=true)"
+    },
+    "stage2": {
+      "stage": "Stage 2: Liquidity",
+      "entered": 5,
+      "exited": 0,
+      "survivors": 5,
+      "note": "All symbols pass liquidity screen: sufficient bars, dollar volume, price floor, freshness"
+    },
+    "stage3": {
+      "stage": "Stage 3: Trend & RS",
+      "entered": 5,
+      "exited": 3,
+      "survivors": 2,
+      "dropped_reasons": {
+        "negative_slope": 2,
+        "below_200sma": 1
+      },
+      "note": "3 dropped by trend filters (MA alignment, slope). 2 survivors proceed to setup detection."
+    },
+    "stage4": {
+      "stage": "Stage 4: Setup Detection",
+      "entered": 2,
+      "exited": 1,
+      "survivors": 1,
+      "dropped_reasons": {
+        "low_setup_quality": 1
+      },
+      "note": "1 symbol achieves setup quality >= 0.45 (MIN_SETUP_QUALITY)"
+    }
+  },
+  "candidates": [
+    {
+      "symbol": "SPY",
+      "trade_date": "2026-09-12",
+      "setup_type": "PULLBACK",
+      "setup_quality": "0.55",
+      "score_range": {
+        "min": 50,
+        "max": 70,
+        "actual": 56.9,
+        "note": "Score must be deterministic but allow ±0.5 for floating point variation"
+      },
+      "score_breakdown_components": [
+        "technical_score",
+        "momentum_score",
+        "relative_strength_score",
+        "volume_score",
+        "regime_fit_score",
+        "catalyst_score",
+        "reward_risk_score"
+      ]
+    }
+  ],
+  "regeneration_procedure": {
+    "step_1": "Obtain real market data for ~200 liquid symbols on known date",
+    "step_2": "Run scanner.scan() with frozen time (freezegun) on that date",
+    "step_3": "Record stage entry/exit counts and per-stage drop reasons",
+    "step_4": "Record final candidate list with symbol, setup, score, score_breakdown",
+    "step_5": "Update strategy_version in this comment if weights or indicators changed",
+    "step_6": "Save bars data as CSV in this directory for future regression tests",
+    "step_7": "Update test_scanner_regression.py EXPECTED_FUNNEL and EXPECTED_CANDIDATE",
+    "step_8": "Commit the fixture and test together with rationale in commit message"
+  },
+  "notes": "This is the MVP fixture using 5 seeded test stocks. In production, create fixture with ~200 symbols covering breakout, pullback, consolidation, and momentum setups, plus edge cases (low liquidity, recent IPO, high volatility, data gap)."
+}
