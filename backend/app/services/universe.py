@@ -221,7 +221,7 @@ class UniverseService:
         current_stocks = await self.stock_repo.list_universe()
         current_universe = {stock["symbol"]: stock for stock in current_stocks}
 
-        current_symbols = set(str(k) for k in current_universe.keys())
+        current_symbols = {str(k) for k in current_universe}
         entered = new_universe - current_symbols
         exited = current_symbols - new_universe
 
