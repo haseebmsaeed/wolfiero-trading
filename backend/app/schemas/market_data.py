@@ -23,7 +23,7 @@ class Quote(BaseModel):
     class Config:
         """Allow decimal representation."""
 
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
 
 
 class OHLCVBar(BaseModel):
@@ -38,7 +38,7 @@ class OHLCVBar(BaseModel):
     adjusted: bool = True
 
     class Config:
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
 
 
 class OHLCVFrame(BaseModel):
@@ -49,7 +49,7 @@ class OHLCVFrame(BaseModel):
     interval: str = "1d"  # 1d, 1h, 15m, etc.
 
     class Config:
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
 
 
 class Fundamentals(BaseModel):
@@ -63,7 +63,7 @@ class Fundamentals(BaseModel):
     eps: Decimal | None = None
 
     class Config:
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
 
 
 class EarningsEvent(BaseModel):
@@ -79,7 +79,7 @@ class EarningsEvent(BaseModel):
     surprise_pct: Decimal | None = None
 
     class Config:
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
 
 
 class ProviderHealth(BaseModel):

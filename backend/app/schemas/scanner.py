@@ -52,7 +52,7 @@ class CandidateResponse(BaseModel):
     veto_reasons: list[str] | None = None
 
     class Config:
-        json_schema_extra = {"example": {
+        json_schema_extra = {"example": {  # noqa: RUF012
             "rank": 1,
             "symbol": "NVDA",
             "score": 82.5,

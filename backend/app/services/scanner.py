@@ -420,10 +420,7 @@ class ScannerService:
                 vol_ratio = volume.iloc[-1] / vol_avg if vol_avg > 0 else 1
 
                 # Base quality: if volume >= 1.3x, quality score
-                if vol_ratio >= 1.3:
-                    quality = Decimal("0.75")
-                else:
-                    quality = Decimal("0.50")
+                quality = Decimal("0.75") if vol_ratio >= 1.3 else Decimal("0.50")
                 return quality
 
             return Decimal("0.25")

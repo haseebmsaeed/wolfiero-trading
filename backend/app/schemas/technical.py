@@ -119,4 +119,4 @@ class TechnicalSnapshot(BaseModel):
     gaps_detected: int
 
     class Config:
-        json_encoders = {Decimal: float}
+        json_encoders = {Decimal: float}  # noqa: RUF012
