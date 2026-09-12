@@ -3,7 +3,6 @@
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Set
 
 import pandas_market_calendars as mcal
 
@@ -108,14 +107,14 @@ class UniverseService:
             "sector_breakdown": sector_counts,
         }
 
-    async def _get_all_symbols(self) -> Set[str]:
+    async def _get_all_symbols(self) -> set[str]:
         """Get all active tradeable symbols from database."""
         stocks = await self.stock_repo.list_active()
         return {stock["symbol"] for stock in stocks}
 
     async def _apply_liquidity_screen(
-        self, symbols: Set[str], trade_date: date
-    ) -> Set[str]:
+        self, symbols: set[str], trade_date: date
+    ) -> set[str]:
         """Apply liquidity and data quality filters."""
         survivors = set()
         lookback_start = trade_date - timedelta(days=self.DATA_LOOKBACK_DAYS + 10)
@@ -178,7 +177,7 @@ class UniverseService:
 
         return survivors
 
-    async def _apply_exclusions(self, symbols: Set[str]) -> Set[str]:
+    async def _apply_exclusions(self, symbols: set[str]) -> set[str]:
         """Apply exclusion rules: leveraged ETFs, recent IPOs, blocklisted."""
         survivors = set()
 
@@ -213,7 +212,7 @@ class UniverseService:
         return survivors
 
     async def _update_universe(
-        self, new_universe: Set[str], trade_date: date
+        self, new_universe: set[str], trade_date: date
     ) -> dict:
         """Update stocks.in_universe and log membership changes."""
         current_stocks = await self.stock_repo.list_universe()
