@@ -11,6 +11,7 @@ import anthropic
 import httpx
 
 from .telegram_adapter import TelegramAdapter
+from . import tools
 
 # Load configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -37,7 +38,11 @@ telegram_task = None
 # Initialize Anthropic client
 client = anthropic.Anthropic(api_key=AI_API_KEY)
 
-# HTTP client for tool calls
+# Initialize tools module with API config
+tools.WOLFIERO_API_URL = WOLFIERO_API_URL
+tools.WOLFIERO_API_KEY = WOLFIERO_API_KEY
+
+# HTTP client for health checks
 http_client = httpx.AsyncClient(
     base_url=WOLFIERO_API_URL,
     headers={"Authorization": f"Bearer {WOLFIERO_API_KEY}"},
@@ -62,43 +67,13 @@ class AgentResponse(BaseModel):
     grounding_ok: bool = True
 
 
-# Define tools for Claude to use
-TOOLS = [
-    {
-        "name": "analyze_stock",
-        "description": "Perform comprehensive technical analysis of a stock. Use this when the user asks about a specific stock (NVDA, AAPL, etc). Do NOT use this to find new ideas — that's for scan_market.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Stock ticker symbol (e.g., NVDA, SPY)",
-                }
-            },
-            "required": ["symbol"],
-        },
-    },
-]
+# Use tools from tools module
+TOOLS = tools.TOOL_SCHEMAS
 
 
 async def call_tool(tool_name: str, tool_input: dict) -> dict:
     """Call a tool via the Wolfiero API."""
-    logger.info(f"Calling tool: {tool_name} with input: {tool_input}")
-
-    try:
-        if tool_name == "analyze_stock":
-            symbol = tool_input.get("symbol", "").upper()
-            response = await http_client.post(
-                "/api/stocks/analyze",
-                params={"symbol": symbol},
-            )
-            response.raise_for_status()
-            return response.json()
-        else:
-            return {"error": f"Unknown tool: {tool_name}"}
-    except httpx.HTTPError as e:
-        logger.error(f"Tool call failed: {e}")
-        return {"error": f"API error: {str(e)}"}
+    return await tools.call_tool(tool_name, tool_input)
 
 
 @app.post("/chat")
