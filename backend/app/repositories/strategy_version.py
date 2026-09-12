@@ -11,13 +11,14 @@ class StrategyVersionRepository:
         self.db = db
         self.collection = db.collection("strategy_versions")
 
-    async def get(self, version: str) -> dict | None:
+    async def get(self, version: str) -> dict[str, object] | None:
         """Get a strategy version by version string."""
         doc = await self.collection.document(version).get()
         if doc.exists:
             data = doc.to_dict()
-            data["version"] = version
-            return data
+            if data:
+                data["version"] = version
+                return data
         return None
 
     async def create(self, version: str, data: dict) -> None:
@@ -29,10 +30,11 @@ class StrategyVersionRepository:
 
     async def list_all(self) -> list[dict[str, object]]:
         """List all strategy versions (all documents in collection)."""
-        docs = await self.collection.stream()
-        results = []
+        docs = self.collection.stream()
+        results: list[dict[str, object]] = []
         async for doc in docs:
             data = doc.to_dict()
-            data["version"] = doc.id
-            results.append(data)
+            if data:
+                data["version"] = doc.id
+                results.append(data)
         return results

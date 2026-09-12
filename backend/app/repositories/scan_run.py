@@ -19,23 +19,25 @@ class ScanRunRepository:
             raise ValueError(f"Scan run {run_id} already exists")
         await self.collection.document(run_id).set(data)
 
-    async def get(self, run_id: str) -> dict | None:
+    async def get(self, run_id: str) -> dict[str, object] | None:
         """Get a scan run by run_id."""
         doc = await self.collection.document(run_id).get()
         if doc.exists:
             data = doc.to_dict()
-            data["run_id"] = run_id
-            return data
+            if data:
+                data["run_id"] = run_id
+                return data
         return None
 
-    async def get_by_date_version(self, trade_date: date, version: str) -> dict | None:
+    async def get_by_date_version(self, trade_date: date, version: str) -> dict[str, object] | None:
         """Get the scan run for a specific date and strategy version."""
-        docs = await self.collection.where("trade_date", "==", trade_date).where(
+        docs = self.collection.where("trade_date", "==", trade_date).where(
             "strategy_version", "==", version
         ).limit(1).stream()
         async for doc in docs:
             if doc.exists:
                 data = doc.to_dict()
-                data["run_id"] = doc.id
-                return data
+                if data:
+                    data["run_id"] = doc.id
+                    return data
         return None

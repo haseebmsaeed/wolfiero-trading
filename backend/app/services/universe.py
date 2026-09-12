@@ -101,7 +101,8 @@ class UniverseService:
         for stock in stocks:
             sector = stock.get("sector")
             if sector:
-                sector_counts[sector] = sector_counts.get(sector, 0) + 1
+                sector_str = str(sector)
+                sector_counts[sector_str] = sector_counts.get(sector_str, 0) + 1
 
         return {
             "total_symbols": total,
@@ -112,7 +113,7 @@ class UniverseService:
     async def _get_all_symbols(self) -> set[str]:
         """Get all active tradeable symbols from database."""
         stocks = await self.stock_repo.list_active()
-        return {stock["symbol"] for stock in stocks}
+        return {str(stock["symbol"]) for stock in stocks}
 
     async def _apply_liquidity_screen(
         self, symbols: set[str], trade_date: date
@@ -220,8 +221,9 @@ class UniverseService:
         current_stocks = await self.stock_repo.list_universe()
         current_universe = {stock["symbol"]: stock for stock in current_stocks}
 
-        entered = new_universe - set(current_universe.keys())
-        exited = set(current_universe.keys()) - new_universe
+        current_symbols = set(str(k) for k in current_universe.keys())
+        entered = new_universe - current_symbols
+        exited = current_symbols - new_universe
 
         # Batch update in_universe flags
         await self.stock_repo.update_in_universe_batch(entered, exited)

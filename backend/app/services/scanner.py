@@ -152,7 +152,7 @@ class ScannerService:
         stage = StageResult("Stage 1: Universe")
 
         stocks = await self.stock_repo.list_universe()
-        symbols = {stock["symbol"] for stock in stocks}
+        symbols: set[str] = {str(stock["symbol"]) for stock in stocks}
         stage.survivors = symbols
         stage.entered = len(symbols)
 
