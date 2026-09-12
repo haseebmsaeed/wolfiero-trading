@@ -115,7 +115,7 @@ class ScannerService:
                 data_coverage_pct=Decimal("100.00"),
             )
             self.db.add(scan_run)
-            await self.db.flush()
+            await self.db.commit()
 
             return {
                 "run_id": run_id,
@@ -162,7 +162,7 @@ class ScannerService:
 
                 # Check: minimum bars
                 result = await self.db.execute(
-                    select(func.count(PriceHistory.id)).where(
+                    select(func.count(PriceHistory.trade_date)).where(
                         PriceHistory.stock_id == stock_id
                     )
                 )
