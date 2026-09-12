@@ -28,7 +28,13 @@ class TechnicalAnalysisService:
         Args:
             symbol: e.g. 'NVDA'
             bars_df: DataFrame with OHLCV (indexed by date)
+
+        Raises:
+            ValueError: If bars_df has insufficient history (< 20 bars)
         """
+        if len(bars_df) < 20:
+            raise ValueError(f"{symbol}: insufficient history ({len(bars_df)} bars)")
+
         self.symbol = symbol
         self.bars = bars_df
         self.close = bars_df["Close"]
@@ -42,8 +48,6 @@ class TechnicalAnalysisService:
         Returns:
             TechnicalSnapshot with all indicators and classifications
         """
-        if len(self.bars) < 50:
-            raise ValueError(f"{self.symbol}: insufficient history ({len(self.bars)} bars)")
 
         # Compute all indicators
         trend = self._analyze_trend()
@@ -155,6 +159,8 @@ class TechnicalAnalysisService:
         # ROC
         roc = indicators.roc(self.close, 20)
         roc_val = float(roc.iloc[-1])
+        if pd.isna(roc_val):
+            roc_val = 0.0
 
         return MomentumMetrics(
             rsi_14=RSIMetrics(value=Decimal(str(rsi_val)), state=rsi_state),
@@ -186,6 +192,8 @@ class TechnicalAnalysisService:
         # Realized vol
         real_vol = indicators.realized_volatility(self.close, 20, annualized=True)
         real_vol_val = float(real_vol.iloc[-1]) * 100
+        if pd.isna(real_vol_val):
+            real_vol_val = 0.0
 
         # Bollinger width percentile
         bb_percentile = indicators.bollinger_width_percentile(self.close, lookback=50)

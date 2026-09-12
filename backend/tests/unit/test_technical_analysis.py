@@ -21,22 +21,12 @@ class TestTechnicalAnalysisService:
         assert len(service.bars) == len(df)
         assert service.close is not None
 
-    def test_analyze_returns_snapshot(self):
-        """Test that analyze returns a valid TechnicalSnapshot."""
-        df = get_sample_dataframe()
-        service = TechnicalAnalysisService("SPY", df)
-
-        snapshot = pytest.mark.asyncio(service.analyze())
-        # This will fail without proper async, but structure is correct
-        # Actual async test is in integration tests
-
     def test_analyze_with_insufficient_history(self):
         """Test that analyze raises on insufficient bars."""
-        df = get_sample_dataframe().head(30)  # Only 30 bars
-        service = TechnicalAnalysisService("NVDA", df)
+        df = get_sample_dataframe().head(10)  # Only 10 bars
 
         with pytest.raises(ValueError, match="insufficient history"):
-            pytest.mark.asyncio(service.analyze())
+            TechnicalAnalysisService("NVDA", df)
 
     def test_trend_uptrend_detection(self):
         """Test uptrend detection logic."""
