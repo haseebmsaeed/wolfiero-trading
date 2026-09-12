@@ -16,6 +16,7 @@ from app.models.scanner import ScanRun, Candidate
 from app.models.stock import Stock, PriceHistory
 from app.services import indicators
 from app.services.market_data import MarketDataService, validate_ohlcv
+from app.services.scoring import ScoringService
 
 logger = get_logger(__name__)
 
@@ -91,11 +92,11 @@ class ScannerService:
             logger.info("stage2_complete", run_id=run_id, survivors=len(stage2.survivors))
 
             # Stage 3: Trend & RS
-            stage3 = await self._stage3_trend(stage2.survivors, trade_date)
+            stage3, rs_percentiles = await self._stage3_trend(stage2.survivors, trade_date)
             logger.info("stage3_complete", run_id=run_id, survivors=len(stage3.survivors))
 
-            # Stage 4: Setup detection
-            stage4 = await self._stage4_setup(stage3.survivors, trade_date)
+            # Stage 4: Setup detection (returns dict of symbol -> (setup_type, quality, bars))
+            stage4, setup_info = await self._stage4_setup(stage3.survivors, trade_date)
             logger.info("stage4_complete", run_id=run_id, survivors=len(stage4.survivors))
 
             funnel = {
@@ -104,6 +105,12 @@ class ScannerService:
                 "stage3": stage3.to_dict(),
                 "stage4": stage4.to_dict(),
             }
+
+            # Stage 5: Scoring and candidate creation
+            candidates = await self._stage5_scoring(
+                setup_info, rs_percentiles, run_id, trade_date
+            )
+            logger.info("stage5_complete", run_id=run_id, candidates=len(candidates))
 
             # Persist scan run
             scan_run = ScanRun(
@@ -121,6 +128,7 @@ class ScannerService:
                 "run_id": run_id,
                 "status": "COMPLETED",
                 "funnel": funnel,
+                "candidates": len(candidates),
             }
 
         except Exception as e:
@@ -234,8 +242,12 @@ class ScannerService:
 
     async def _stage3_trend(
         self, symbols: set[str], trade_date: date
-    ) -> StageResult:
-        """Stage 3: Trend and relative strength filters."""
+    ) -> tuple[StageResult, dict[str, Decimal]]:
+        """Stage 3: Trend and relative strength filters.
+
+        Returns:
+            (StageResult, dict of symbol -> RS percentile)
+        """
         stage = StageResult("Stage 3: Trend & RS")
         stage.entered = len(symbols)
 
@@ -301,14 +313,19 @@ class ScannerService:
                 continue
 
         stage.exited = stage.entered - len(stage.survivors)
-        return stage
+        return stage, rs_percentiles
 
     async def _stage4_setup(
         self, symbols: set[str], trade_date: date
-    ) -> StageResult:
-        """Stage 4: Setup detection and quality filtering."""
+    ) -> tuple[StageResult, dict]:
+        """Stage 4: Setup detection and quality filtering.
+
+        Returns:
+            (StageResult, dict of symbol -> (setup_type, quality, bars_df))
+        """
         stage = StageResult("Stage 4: Setup Detection")
         stage.entered = len(symbols)
+        setup_info = {}
 
         for symbol in symbols:
             try:
@@ -354,6 +371,7 @@ class ScannerService:
 
                 # Passed: store setup info for candidate creation
                 stage.survivors.add(symbol)
+                setup_info[symbol] = (best_setup.setup_type, best_setup.quality, bars_df)
 
             except Exception as e:
                 logger.warning("stage4_error", symbol=symbol, error=str(e))
@@ -361,7 +379,7 @@ class ScannerService:
                 continue
 
         stage.exited = stage.entered - len(stage.survivors)
-        return stage
+        return stage, setup_info
 
     async def _compute_rs_percentiles(self, symbols: set[str]) -> dict[str, Decimal]:
         """Compute relative strength percentiles for symbols."""
@@ -540,3 +558,79 @@ class ScannerService:
             }
             for c in candidates
         ]
+
+    async def _stage5_scoring(
+        self,
+        setup_info: dict,
+        rs_percentiles: dict[str, Decimal],
+        run_id: str,
+        trade_date: date,
+    ) -> list[Candidate]:
+        """Stage 5: Score candidates and create records.
+
+        Args:
+            setup_info: dict of symbol -> (setup_type, quality, bars_df)
+            rs_percentiles: dict of symbol -> RS percentile
+            run_id: Scan run ID
+            trade_date: Trading date
+
+        Returns:
+            List of created Candidate records
+        """
+        scoring_service = ScoringService()
+        candidates = []
+
+        for symbol, (setup_type, setup_quality, bars_df) in setup_info.items():
+            try:
+                rs_pct = rs_percentiles.get(symbol, Decimal("50"))
+
+                # Score the candidate
+                score_breakdown = scoring_service.score_candidate(
+                    bars_df=bars_df,
+                    setup_type=setup_type,
+                    setup_quality=setup_quality,
+                    rs_percentile=rs_pct,
+                    regime="RISK_ON",
+                )
+
+                # Get stock ID
+                result = await self.db.execute(
+                    select(Stock.id).where(Stock.symbol == symbol)
+                )
+                stock_id = result.scalar()
+                if not stock_id:
+                    logger.warning("stage5_no_stock", symbol=symbol)
+                    continue
+
+                # Create Candidate record
+                candidate = Candidate(
+                    run_id=run_id,
+                    stock_id=stock_id,
+                    symbol=symbol,
+                    trade_date=trade_date,
+                    score=score_breakdown.total_score,
+                    score_breakdown=score_breakdown._asdict(),
+                    setup_type=setup_type,
+                    setup_quality=setup_quality,
+                    technical_snapshot={
+                        "sma_50": 0,
+                        "sma_200": 0,
+                        "ema_20": 0,
+                        "rsi": 0,
+                    },
+                    is_vetoed=False,
+                    veto_reasons=None,
+                )
+
+                self.db.add(candidate)
+                candidates.append(candidate)
+
+            except Exception as e:
+                logger.warning("stage5_error", symbol=symbol, error=str(e))
+                continue
+
+        # Commit all candidates
+        if candidates:
+            await self.db.commit()
+
+        return candidates
