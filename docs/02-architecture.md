@@ -7,7 +7,7 @@
 
 ## 1. Architectural thesis
 
-> **Python computes. PostgreSQL remembers. The AI interprets. Telegram delivers.**
+> **Python computes. Firestore remembers. The AI interprets. Telegram delivers.**
 
 Four responsibilities, four layers, no overlap. The most common way a project like this fails is
 letting the LLM creep into the compute layer — asking it to "scan the market," "rank these," or
@@ -18,7 +18,7 @@ architecture below makes it structurally hard to do.
 |---|---|---|
 | **Agent runtime** (OpenClaw) | Conversation, intent → tool selection, natural-language synthesis, scheduling triggers | Compute an indicator, hold business state, query the DB directly |
 | **Backend API** (FastAPI) | All calculation, all business rules, all persistence, all provider access | Call an LLM for anything deterministic |
-| **PostgreSQL** | Durable state, history, outcomes, audit | Hold derived values that are cheap to recompute *and* likely to change definition |
+| **Firestore** | Durable state, history, outcomes, audit (append-only) | Hold derived values that are cheap to recompute *and* likely to change definition |
 | **Telegram** | Input and output for one human | Contain logic |
 
 **The load-bearing rule:** if a question can be answered by a formula, a formula answers it. The LLM
@@ -82,20 +82,20 @@ to reach into the database and produce an answer no other caller could reproduce
 
 | Concern | Choice | Why this and not the alternative |
 |---|---|---|
-| Host | Single Azure Ubuntu 24.04 VM (2 vCPU / 8 GB / 64 GB SSD to start) | Daily-bar analysis on 3,000 symbols is minutes of CPU, not a cluster. Kubernetes here is pure overhead. |
-| Runtime | Docker Compose | One file, one `up`, reproducible. Revisit only when you need multi-host. |
+| Host | Google Cloud Run (serverless containers) | This is a solo trader's scanner: 1 user, 1-2 scans/day. No need for VM management, patches, or fixed capacity. Cloud Run scales to zero between scans, billing aligns with actual usage (~$0 for this workload). |
+| Local dev | Docker Compose + Firestore emulator | One file, one `make up`, reproducible. Firestore emulator spins up locally for development and testing. |
 | API | Python 3.12 + FastAPI | Async I/O for provider fan-out, Pydantic validation, free OpenAPI schema — which doubles as the agent's tool documentation. |
 | Data | pandas + numpy | The analysis is tabular time-series. This is what the ecosystem is for. |
 | Indicators | `pandas-ta` (fallback: hand-rolled) | **Important:** wrap it. Do not let `pandas-ta` calls litter the services layer — these libraries change APIs and occasionally disagree on formulas. One `indicators.py` module, fully unit-tested. TA-Lib is faster but a C-build headache; not worth it at this volume. |
-| DB | PostgreSQL 16 | Relational, transactional, excellent JSONB for semi-structured payloads (raw news, score breakdowns). SQLite fails on concurrent scheduler + API writes. |
-| ORM / migrations | SQLAlchemy 2.0 + Alembic | Alembic from day one. Retrofitting migrations after the schema drifts is miserable. |
-| Scheduling | APScheduler in-process | Half a dozen cron-like jobs on one host. Celery + Redis adds two services and a broker to solve a problem you do not have. Graduate only if jobs need distribution or retry semantics you cannot hand-roll. |
+| DB | Google Firestore | Document store with real-time capabilities, excellent for semi-structured data (price history, technical snapshots, score breakdowns). Free tier covers this workload (50K reads/day, 20K writes/day). Trade-off: no server-side aggregation (sector grouping now in Python), no atomic transactions across thousands of docs (chunked WriteBatch + audit doc instead). |
+| Data access | Repository pattern with Protocol interfaces | All database access goes through typed repositories. Services never touch the database layer directly. Unit tests inject FakeRepositories (zero Docker dependency); integration tests use Firestore emulator via testcontainers. |
+| Money handling | Scaled-integer Decimals (not strings, never float) | Prices stored as int (price × 10_000), Decimal arithmetic on retrieval. Preserves exactness and remains range-queryable. Single module `app/db/money.py` enforces "Money is Decimal, never float" rule. |
+| Scheduling | Future: Cloud Scheduler + Cloud Run Jobs | Currently no scheduled jobs. When jobs are needed, use Cloud Scheduler (triggers) + Cloud Run Jobs (execution) instead of in-process APScheduler (Cloud Run's scale-to-zero is incompatible with persistent processes). |
 | HTTP client | `httpx` (async) | Async, connection pooling, timeouts, retries. |
 | Agent runtime | OpenClaw | Conversation, tool orchestration, LLM routing, Telegram. |
 | LLM | Provider-abstracted, configurable | Model quality and pricing move monthly. Never hardcode a vendor; log which model produced each output so you can compare them later. |
-| Reverse proxy | Caddy | Automatic TLS. Only needed if anything is exposed externally; in v1, prefer nothing exposed. |
-| Secrets | `.env` → Azure Key Vault | `.env` is acceptable for a single-operator box *if* the repo has a pre-commit secret scanner. |
-| Observability | structlog JSON → Docker logs; `/health` + `/metrics` | Start here. Add Grafana only when you are actually reading dashboards. |
+| Secrets | `.env` → Google Secret Manager | `.env` is acceptable for local dev. Production: Google Secret Manager for Telegram tokens, API keys, etc. |
+| Observability | structlog JSON → Cloud Logging | Container logs ship to Google Cloud Logging. `/health` endpoint for Cloud Run health checks. |
 
 ### Deliberately not in v1
 
