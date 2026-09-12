@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import ClassVar
 
 import pandas_market_calendars as mcal
 
@@ -25,8 +26,10 @@ class UniverseService:
     MIN_IPO_AGE_DAYS = 60
     DATA_LOOKBACK_DAYS = 20
 
-    LEVERAGED_PATTERNS = ["3X", "2X", "-2X", "-3X", "INVERSE", "SHORT", "BEAR"]
-    BLOCKLISTED_ETFS = {"TQQQ", "SQQQ", "UVXY", "VIXY", "SVXY"}
+    LEVERAGED_PATTERNS: ClassVar[list[str]] = [
+        "3X", "2X", "-2X", "-3X", "INVERSE", "SHORT", "BEAR"
+    ]
+    BLOCKLISTED_ETFS: ClassVar[set[str]] = {"TQQQ", "SQQQ", "UVXY", "VIXY", "SVXY"}
 
     def __init__(
         self,
