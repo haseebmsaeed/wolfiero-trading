@@ -1,39 +1,35 @@
 version: "3.9"
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${DB_USER:-wolfiero}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-wolfiero}
-      POSTGRES_DB: ${DB_NAME:-wolfiero}
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    entrypoint: gcloud beta emulators firestore start --host-port 0.0.0.0:8080
     ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "8080:8080"
+    networks:
+      - wolfiero
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-wolfiero} -d ${DB_NAME:-wolfiero}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks:
-      - wolfiero
-    restart: unless-stopped
 
   wolfiero-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:-wolfiero}:${DB_PASSWORD:-wolfiero}@postgres:5432/${DB_NAME:-wolfiero}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-wolfiero-dev}
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
+      firestore-emulator:
         condition: service_healthy
     volumes:
       # For development: bind mount the app source
@@ -84,10 +80,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-
-volumes:
-  postgres_data:
-    driver: local
 
 networks:
   wolfiero:
