@@ -124,6 +124,58 @@ async def get_stock_history(
         return {"error": str(e)}
 
 
+async def scan_market() -> dict:
+    """Get the latest scan results: top candidate stocks ranked by score.
+
+    Use this when:
+    - User asks "What looks good today?" or "Any setups?"
+    - You need the latest ranked candidate list
+    - A scan has already been completed today
+
+    Returns the top candidates with score, setup type, and quality.
+    If no scan has run today, will be empty.
+    """
+    try:
+        result = await call_api(
+            "/api/scanner/candidates",
+            method="GET",
+        )
+        return result
+    except ToolCallError as e:
+        return {"error": str(e)}
+
+
+async def run_scan(trade_date: Optional[str] = None) -> dict:
+    """Trigger a new market scan: runs all 4 filtering stages, scores, and ranks candidates.
+
+    Use this when:
+    - User explicitly requests a fresh scan
+    - scan_market returned no results and user wants an on-demand refresh
+    - Previous scan is stale
+
+    WARNING: This takes several minutes to complete on the full 3,000-symbol universe.
+    Only use if user explicitly requests it.
+
+    Args:
+        trade_date: Date to scan (optional, defaults to today)
+
+    Returns: run_id for polling results, and immediate funnel acceptance response.
+    """
+    try:
+        params = {}
+        if trade_date:
+            params["trade_date"] = trade_date
+
+        result = await call_api(
+            "/api/scanner/run",
+            method="POST",
+            params=params,
+        )
+        return result
+    except ToolCallError as e:
+        return {"error": str(e)}
+
+
 # Tool schema for Claude
 TOOL_SCHEMAS = [
     {
@@ -187,6 +239,54 @@ Returns: array of OHLCV bars with dates, open/high/low/close, volume.""",
             "required": ["symbol"],
         },
     },
+    {
+        "name": "scan_market",
+        "description": """Get the latest market scan results: top candidates ranked by score.
+
+Use this when:
+- User asks "What looks good today?", "Any setups?", "Show me candidates"
+- You need to see today's best ranked trading ideas
+- User wants to know what the scanner found
+
+Do NOT use this for:
+- Running a fresh scan (use run_scan if user explicitly requests it)
+- Analyzing a specific stock (use analyze_stock)
+
+Returns: top 20 candidates with symbol, score (0-100), setup type
+(BREAKOUT/PULLBACK/CONSOLIDATION/MOMENTUM), and setup quality (0-1).
+Empty list if no scan has run today.""",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "run_scan",
+        "description": """Trigger a fresh market scan: run all filtering stages and score candidates.
+
+IMPORTANT: Takes several minutes (full 3,000-symbol universe).
+
+Use this when:
+- User explicitly asks for a fresh scan ("run a scan", "check the market now")
+- scan_market returned no results and user wants on-demand update
+
+Do NOT use this automatically:
+- Only when user explicitly requests it
+- Never as a precondition to scan_market
+
+Returns: run_id and acceptance status. Check scan_market later for results.""",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "trade_date": {
+                    "type": "string",
+                    "description": "Date to scan in YYYY-MM-DD format (optional, defaults to today)",
+                }
+            },
+            "required": [],
+        },
+    },
 ]
 
 
@@ -199,6 +299,10 @@ async def call_tool(tool_name: str, tool_input: dict) -> dict:
             return await analyze_stock(**tool_input)
         elif tool_name == "get_stock_history":
             return await get_stock_history(**tool_input)
+        elif tool_name == "scan_market":
+            return await scan_market(**tool_input)
+        elif tool_name == "run_scan":
+            return await run_scan(**tool_input)
         else:
             return {"error": f"Unknown tool: {tool_name}"}
     except Exception as e:
