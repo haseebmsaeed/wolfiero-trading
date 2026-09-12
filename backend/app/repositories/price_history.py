@@ -13,7 +13,7 @@ class PriceHistoryRepository:
         self.db = db
         self.stocks_collection = db.collection("stocks")
 
-    def _subcollection_ref(self, symbol: str) -> object:
+    def _subcollection_ref(self, symbol: str) -> Any:  # type: ignore
         """Return the price_history subcollection reference for a symbol."""
         return self.stocks_collection.document(symbol).collection("price_history")
 
@@ -30,7 +30,7 @@ class PriceHistoryRepository:
         query = query.order_by("trade_date")
         docs = query.stream()
 
-        records: list[dict[str, object]] = []
+        records: list[dict[str, Any]] = []
         async for doc in docs:
             data = doc.to_dict()
             data["trade_date"] = doc.id  # Doc ID is the trade_date as a date string

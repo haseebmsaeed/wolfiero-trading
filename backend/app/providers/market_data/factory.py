@@ -1,6 +1,6 @@
 """Market data provider factory with failover chain."""
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from app.logging import get_logger
 from app.providers.market_data.base import MarketDataProvider, ProviderError
@@ -115,8 +115,8 @@ class ProviderFactory:
     async def get_history(
         self,
         symbol: str,
-        start: object,
-        end: object,
+        start: Any,
+        end: Any,
         interval: str = "1d",
     ) -> dict[str, object]:
         """Get history through failover chain."""
@@ -154,8 +154,8 @@ class ProviderFactory:
     async def get_history_batch(
         self,
         symbols: list[str],
-        start: object,
-        end: object,
+        start: Any,
+        end: Any,
         interval: str = "1d",
     ) -> dict[str, object]:
         """Get history for multiple symbols."""

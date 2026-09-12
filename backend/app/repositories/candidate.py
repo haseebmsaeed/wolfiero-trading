@@ -12,11 +12,11 @@ class CandidateRepository:
         self.db = db
         self.scan_runs_collection = db.collection("scan_runs")
 
-    def _subcollection_ref(self, run_id: str) -> object:
+    def _subcollection_ref(self, run_id: str) -> Any:  # type: ignore
         """Return the candidates subcollection reference for a run."""
         return self.scan_runs_collection.document(run_id).collection("candidates")
 
-    async def create_many(self, run_id: str, candidates: list[dict[str, object]]) -> None:
+    async def create_many(self, run_id: str, candidates: list[dict[str, Any]]) -> None:
         """Create multiple candidate records for a run.
 
         Uses .create() semantics (fails on duplicate) to enforce immutability.
@@ -33,7 +33,7 @@ class CandidateRepository:
 
         await batch.commit()
 
-    async def get(self, run_id: str, symbol: str) -> dict[str, object] | None:
+    async def get(self, run_id: str, symbol: str) -> dict[str, Any] | None:
         """Get a single candidate by run_id and symbol."""
         doc = await self._subcollection_ref(run_id).document(symbol).get()
         if doc.exists:
@@ -55,7 +55,7 @@ class CandidateRepository:
         query = query.limit(limit)
 
         docs = query.stream()
-        results: list[dict[str, object]] = []
+        results: list[dict[str, Any]] = []
         async for doc in docs:
             data = doc.to_dict()
             if data:

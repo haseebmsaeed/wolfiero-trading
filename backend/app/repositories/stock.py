@@ -1,5 +1,6 @@
 """Firestore-backed Stock repository."""
 
+from typing import Any
 
 from google.cloud.firestore import AsyncClient
 
@@ -11,7 +12,7 @@ class StockRepository:
         self.db = db
         self.collection = db.collection("stocks")
 
-    async def get_by_symbol(self, symbol: str) -> dict[str, object] | None:
+    async def get_by_symbol(self, symbol: str) -> dict[str, Any] | None:
         """Get a stock document by symbol (the document ID)."""
         doc = await self.collection.document(symbol).get()
         if doc.exists:
@@ -24,7 +25,7 @@ class StockRepository:
     async def list_active(self) -> list[dict[str, object]]:
         """List all stocks where is_active=True."""
         docs = self.collection.where("is_active", "==", True).stream()
-        results: list[dict[str, object]] = []
+        results: list[dict[str, Any]] = []
         async for doc in docs:
             data = doc.to_dict()
             if data:
@@ -37,7 +38,7 @@ class StockRepository:
         docs = self.collection.where("is_active", "==", True).where(
             "in_universe", "==", True
         ).stream()
-        results: list[dict[str, object]] = []
+        results: list[dict[str, Any]] = []
         async for doc in docs:
             data = doc.to_dict()
             if data:
@@ -45,7 +46,7 @@ class StockRepository:
                 results.append(data)
         return results
 
-    async def upsert(self, symbol: str, data: dict[str, object]) -> None:
+    async def upsert(self, symbol: str, data: dict[str, Any]) -> None:
         """Create or update a stock document (merge semantics)."""
         await self.collection.document(symbol).set(data, merge=True)
 
