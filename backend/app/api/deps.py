@@ -86,4 +86,12 @@ async def get_scanner_service(
     candidate_repo: CandidateRepository = Depends(get_candidate_repository),
 ) -> ScannerService:
     """Get ScannerService with dependencies."""
-    return ScannerService(market_data, stock_repo, price_repo, scan_run_repo, candidate_repo)
+    settings = get_settings()
+    return ScannerService(
+        market_data,
+        stock_repo,
+        price_repo,
+        scan_run_repo,
+        candidate_repo,
+        max_candidates=settings.scan_max_candidates,
+    )

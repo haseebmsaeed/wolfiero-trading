@@ -81,7 +81,7 @@ class CandidateRepository:
                 query = query.where("is_vetoed", "==", False)
             query = query.order_by("rank")
 
-            cands = await query.stream()
+            cands = query.stream()
             async for cand_doc in cands:
                 data = cand_doc.to_dict()
                 data["run_id"] = run_id

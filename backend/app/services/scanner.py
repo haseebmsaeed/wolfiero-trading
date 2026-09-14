@@ -70,6 +70,7 @@ class ScannerService:
         price_history_repository: PriceHistoryRepository,
         scan_run_repository: ScanRunRepository,
         candidate_repository: CandidateRepository,
+        max_candidates: int = 20,
     ):
         """Initialize scanner with repositories and market data."""
         self.market_data = market_data_service
@@ -77,6 +78,7 @@ class ScannerService:
         self.price_repo = price_history_repository
         self.scan_run_repo = scan_run_repository
         self.candidate_repo = candidate_repository
+        self.max_candidates = max_candidates
         self.calendar = mcal.get_calendar("NYSE")
 
     async def scan(
@@ -626,6 +628,14 @@ class ScannerService:
             except Exception as e:
                 logger.warning("stage5_error", symbol=symbol, error=str(e))
                 continue
+
+        # Rank by score (highest first) and keep the top N.
+        # `rank` must be present on every document: Firestore's order_by("rank")
+        # silently omits documents that lack the field.
+        candidates.sort(key=lambda c: c["score"], reverse=True)
+        candidates = candidates[: self.max_candidates]
+        for position, candidate in enumerate(candidates, start=1):
+            candidate["rank"] = position
 
         # Commit all candidates
         if candidates:
