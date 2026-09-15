@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Manual Trading Learning Guide — Pullback &amp; DC20</title>
+<style>
+  /* ─── Screen defaults ─── */
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f7f6f2;
+    color: #1a1a1a;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.55;
+  }
+  .page {
+    max-width: 780px;
+    margin: 32px auto;
+    padding: 48px 56px;
+    background: #ffffff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  h1 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 26pt;
+    line-height: 1.15;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 18pt;
+    line-height: 1.25;
+    margin: 36px 0 10px 0;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid #1a1a1a;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 13.5pt;
+    line-height: 1.3;
+    margin: 26px 0 6px 0;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 11.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 20px 0 4px 0;
+    color: #444;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 12px 0; }
+  ul, ol { margin: 0 0 14px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  li > ul, li > ol { margin: 4px 0; }
+  strong { color: #000; }
+  em { font-style: italic; }
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: #f2f0eb;
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+  blockquote {
+    margin: 12px 0;
+    padding: 8px 16px;
+    border-left: 3px solid #444;
+    color: #333;
+    font-style: italic;
+    background: #faf9f5;
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 32px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px 0;
+    font-size: 10.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #ececec;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-weight: bold;
+  }
+  .cover {
+    text-align: center;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #1a1a1a;
+    margin-bottom: 24px;
+  }
+  .cover .sub {
+    color: #555;
+    font-style: italic;
+    font-size: 12pt;
+    margin-top: 6px;
+  }
+  .meta {
+    color: #666;
+    font-size: 10pt;
+    margin-top: 8px;
+  }
+  .callout {
+    background: #f4efe4;
+    border-left: 4px solid #8a6a2b;
+    padding: 12px 16px;
+    margin: 16px 0;
+    page-break-inside: avoid;
+  }
+  .callout strong { color: #6a4a15; }
+  .checklist {
+    background: #f7f6f2;
+    border: 1px solid #ccc;
+    padding: 12px 16px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .checklist h4 { margin-top: 0; }
+  .keep-together { page-break-inside: avoid; }
+  .toc {
+    margin: 20px 0 32px 0;
+    background: #f7f6f2;
+    padding: 20px 24px;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+  .toc ol { padding-left: 22px; margin: 0; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: #1a1a1a; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .footer-note {
+    color: #666;
+    font-size: 9.5pt;
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ccc;
+  }
+
+  /* ─── Print rules ─── */
+  @page {
+    size: letter;
+    margin: 0.75in 0.7in 0.85in 0.7in;
+  }
+  @media print {
+    html, body {
+      background: white;
+      font-size: 11pt;
+    }
+    .page {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+    h2 { page-break-before: auto; }
+    h2.pagebreak { page-break-before: always; }
+    h3, h4 { page-break-after: avoid; }
+    table, .callout, .checklist, blockquote { page-break-inside: avoid; }
+    a { color: black; text-decoration: none; }
+    .noprint { display: none; }
+    .toc { background: transparent; border: 1px solid #999; }
+    /* Footer with page numbers */
+    @page {
+      @bottom-center {
+        content: "Manual Trading Learning Guide — page " counter(page) " of " counter(pages);
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 9pt;
+        color: #666;
+      }
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="cover">
+  <h1>Learning Path — Master Both Setups Before Placing a Dollar</h1>
+  <div class="sub">A structured 4-week guide to Pullback-to-EMA and Donchian 20, with book &amp; video references, hands-on drills, and manual trading protocol.</div>
+  <div class="meta">For: Haseeb — halal swing trading, $40K account, long-only, cash</div>
+</div>
+
+<div class="toc">
+  <h4 style="margin-top:0;">Contents</h4>
+  <ol>
+    <li>Foundational Concepts You Need First</li>
+    <li>Deep Dive — The Pullback Setup</li>
+    <li>Deep Dive — The Donchian 20 Setup</li>
+    <li>Structured 4-Week Learning Plan</li>
+    <li>The Manual Journal (What to Write Down)</li>
+    <li>Prioritized Reading List</li>
+    <li>Free YouTube Playlist (Prioritized)</li>
+    <li>Your First Real Steps</li>
+    <li>The Honest Truth About This Phase</li>
+  </ol>
+</div>
+
+<div class="callout">
+  <strong>Timeline:</strong> 3–4 weeks to genuinely understand both setups. Then start paper trading. No real money for 3+ months. This is not optional — it is the cheapest tuition you will ever pay.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">1 · Foundational Concepts You Need First</h2>
+
+<p>Before either setup makes sense, you need five building blocks. If you already know these, skim and move on.</p>
+
+<h3>1.1 What You Must Understand First</h3>
+
+<table>
+  <tr>
+    <th style="width:24%;">Concept</th>
+    <th style="width:38%;">What It Is</th>
+    <th style="width:38%;">Why It Matters</th>
+  </tr>
+  <tr>
+    <td><strong>Support &amp; Resistance</strong></td>
+    <td>Price levels where buying/selling historically clusters</td>
+    <td>Every setup is "buy at support, sell at resistance" in some form</td>
+  </tr>
+  <tr>
+    <td><strong>Trend</strong> (higher highs, higher lows)</td>
+    <td>Sequential rising swings</td>
+    <td>You only want to buy stocks that are trending up</td>
+  </tr>
+  <tr>
+    <td><strong>Moving averages</strong> (EMA/SMA)</td>
+    <td>Rolling average of past prices</td>
+    <td>Dynamic support levels; trend definition</td>
+  </tr>
+  <tr>
+    <td><strong>ATR</strong> (Average True Range)</td>
+    <td>Rolling measure of daily price movement</td>
+    <td>Tells you how far a stock "normally" moves — critical for stops</td>
+  </tr>
+  <tr>
+    <td><strong>Volume</strong></td>
+    <td>Number of shares traded</td>
+    <td>Confirms whether price moves are real or fake</td>
+  </tr>
+</table>
+
+<h3>1.2 Best Free Resources for Foundations (2–3 hours total)</h3>
+
+<h4>Videos</h4>
+<ul>
+  <li><strong>StockCharts.com's ChartSchool</strong> (free, text + charts) — search "Stan Weinstein stage analysis" and "moving averages"</li>
+  <li><strong>YouTube — "Chat With Traders" podcast (audio)</strong> — episodes with Adam Grimes and Peter Brandt cover foundations</li>
+  <li><strong>YouTube — "Adam Khoo"</strong> — free swing trading playlist, very beginner-friendly</li>
+  <li><strong>YouTube — "The Trading Channel"</strong> — clean explanations of support/resistance, trend, volume</li>
+</ul>
+
+<h4>Book (one only, if you want a foundation)</h4>
+<ul>
+  <li><strong>Alexander Elder, <em>Trading for a Living</em> (1993)</strong> — 300 pages, dated but the concepts are timeless. Read chapters on: trend, moving averages, volume, MACD, ATR. Skip the rest.</li>
+</ul>
+
+<h4>Skip These (Waste of Time for What You Need)</h4>
+<ul>
+  <li>Fibonacci retracements (adds nothing to either setup)</li>
+  <li>Elliott Wave (occult nonsense for beginners)</li>
+  <li>Anything about "candlestick patterns" beyond doji/engulfing — massively overrated</li>
+  <li>90% of YouTube "guru" content — they sell courses, not trading</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">2 · Deep Dive — The Pullback Setup</h2>
+
+<h3>2.1 The Core Idea</h3>
+
+<blockquote>Buy strong stocks when they take a breather in an uptrend.</blockquote>
+
+<p>Institutions accumulate leaders. Leaders trend up. But no stock goes straight up — it periodically pulls back to catch its breath, and <em>those pullbacks are where you enter with the smallest risk.</em> You wait for the stock to touch its moving average (20 EMA or 50 EMA), volume to dry up (meaning selling pressure is exhausted), then buy on the first sign of resumption.</p>
+
+<h3>2.2 Who to Learn It From (In Order)</h3>
+
+<h4>Mark Minervini — this is his method, described in detail</h4>
+<ol>
+  <li><strong>Book (essential):</strong> <em>Trade Like a Stock Market Wizard</em> (2013), Mark Minervini
+    <ul>
+      <li>Chapter 5 (VCP — Volatility Contraction Pattern) is exactly the pullback logic</li>
+      <li>Chapter 4 (Trend Template) is Stage 2 identification</li>
+      <li><strong>~200 pages, most useful trading book you'll read this year</strong></li>
+    </ul>
+  </li>
+  <li><strong>Book (follow-up):</strong> <em>Think &amp; Trade Like a Champion</em> (2017), Mark Minervini
+    <ul>
+      <li>Deeper on entry timing and pyramid adding</li>
+      <li>Optional; the first book contains 80% of the value</li>
+    </ul>
+  </li>
+</ol>
+
+<h4>Free Video Content</h4>
+<ol start="3">
+  <li><strong>YouTube search:</strong> <code>"Mark Minervini VCP"</code> — several 15–30 minute talks he's given at trading conferences. Watch 2–3 of them.</li>
+  <li><strong>YouTube search:</strong> <code>"Mark Minervini interview"</code> — Chat With Traders episodes 133 and 165 (both free podcasts on YouTube) are gold</li>
+  <li><strong>YouTube channel: "Adam Sarhan"</strong> — decent free content on Minervini-style pullback trading</li>
+</ol>
+
+<h4>Stan Weinstein — Stage 2 Concept (Foundation of the Pullback)</h4>
+<ol start="6">
+  <li><strong>Book:</strong> <em>Secrets for Profiting in Bull and Bear Markets</em> (1988), Stan Weinstein
+    <ul>
+      <li>Chapters 1–2 only. Old book (charts look ancient), but the Stage 1/2/3/4 framework is timeless</li>
+      <li><strong>You can skip if you read Minervini</strong> — Minervini covers Stage 2 in his book</li>
+    </ul>
+  </li>
+</ol>
+
+<h4>William O'Neil — Relative Strength Concept</h4>
+<ol start="7">
+  <li><strong>Book:</strong> <em>How to Make Money in Stocks</em> (2009 edition), William O'Neil
+    <ul>
+      <li>Read only chapters on Relative Strength, CANSLIM leadership, and cup-and-handle</li>
+      <li>Skip the fundamental analysis stuff (Minervini covers it better)</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>2.3 How to Actually Identify a Pullback Manually</h3>
+
+<p>Here's the exact process. Take <strong>one hour Sunday afternoon</strong>, sit down with TradingView, and do these steps.</p>
+
+<h4>Step-by-Step</h4>
+<ol>
+  <li><strong>Open TradingView</strong> → daily chart</li>
+  <li><strong>Add indicators:</strong>
+    <ul>
+      <li>EMA 20 (color: blue, thick line)</li>
+      <li>EMA 50 (color: orange, thick line)</li>
+      <li>SMA 200 (color: red, thick line)</li>
+      <li>Volume (default at bottom)</li>
+      <li>ATR(14) (small subplot)</li>
+    </ul>
+  </li>
+  <li><strong>Pick a stock from your list</strong> (52-week highs, IBD 50, etc.)</li>
+  <li><strong>Do these 7 checks in order</strong> (any single NO kills it — move on):</li>
+</ol>
+
+<div class="checklist keep-together">
+  <h4>The 7-Check Pullback Filter</h4>
+
+  <p><strong>Check 1 — Is it Stage 2 (uptrend)?</strong></p>
+  <ul>
+    <li>Price above 50 EMA? Yes/no</li>
+    <li>Price above 200 SMA? Yes/no</li>
+    <li>50 EMA sloping up? Yes/no</li>
+    <li>200 SMA sloping up? Yes/no</li>
+    <li>Has spent most of last 30 days above 200 SMA? Yes/no</li>
+  </ul>
+  <p>All yes → continue. Any no → <strong>stop, move to next stock.</strong></p>
+
+  <p><strong>Check 2 — Higher Highs, Higher Lows?</strong></p>
+  <ul>
+    <li>Mark the last 3 swing highs and 3 swing lows on the chart</li>
+    <li>Are highs progressively higher? Are lows progressively higher?</li>
+  </ul>
+
+  <p><strong>Check 3 — Is it Outperforming SPY?</strong></p>
+  <ul>
+    <li>In TradingView, add a new symbol: type <code>STOCK/SPY</code> (e.g., <code>NVDA/SPY</code>)</li>
+    <li>Is this ratio at or near a 3-month high? Sloping up?</li>
+  </ul>
+
+  <p><strong>Check 4 — Is There Actually a Pullback Right Now?</strong></p>
+  <ul>
+    <li>From the most recent high, has price come down 3–12%?</li>
+    <li>Did it happen in the last 15 trading days?</li>
+    <li>Did price stay above the 50 EMA during the pullback?</li>
+    <li>Did price touch the 20 EMA or 50 EMA (not blow through)?</li>
+  </ul>
+
+  <p><strong>Check 5 — Did Volume Dry Up During the Pullback?</strong></p>
+  <ul>
+    <li>Look at the volume bars during the pullback (last 3–7 days)</li>
+    <li>Compare to volume in the 20 days <em>before</em> the pullback</li>
+    <li>Are pullback volumes visibly smaller (like 60–70% of prior)?</li>
+    <li>Yes → strong signal. This is the Minervini VCP signature.</li>
+  </ul>
+
+  <p><strong>Check 6 — Not Too Extended?</strong></p>
+  <ul>
+    <li>Read the ATR value (e.g., ATR = $3.50 on a $100 stock)</li>
+    <li>Distance from current price to the 20 EMA?</li>
+    <li>Is that distance ≤ 1.5 × ATR? (In the example: distance ≤ $5.25)</li>
+  </ul>
+
+  <p><strong>Check 7 — Where's Your Stop, Is It Tradeable?</strong></p>
+  <ul>
+    <li>Stop = pullback low − (0.5 × ATR)</li>
+    <li>Example: pullback low $95, ATR $3.50 → stop at $93.25</li>
+    <li>Distance from entry to stop? Say entry is $100 → distance $6.75</li>
+    <li>Is that distance ≤ 2 × ATR? ($7.00) Yes → tradeable. No → skip.</li>
+  </ul>
+
+  <p><strong>If all 7 pass → this is a pullback candidate. Write the trade card.</strong></p>
+</div>
+
+<h3>2.4 Placing the Pullback Trade Manually</h3>
+
+<h4>Entry Order</h4>
+<ul>
+  <li>Buy-stop at the previous day's high + $0.05</li>
+  <li>Example: yesterday's high was $101.80 → buy-stop at $101.85</li>
+  <li>Order type: <strong>Buy-Stop, Good-For-Day</strong></li>
+  <li>The order fills only if price rises through $101.85 during the day</li>
+</ul>
+
+<h4>Stop-Loss (Place Simultaneously)</h4>
+<ul>
+  <li>Sell-stop at your calculated stop price</li>
+  <li>Example: stop at $93.25</li>
+  <li>Order type: <strong>Sell-Stop, GTC (Good Till Cancelled)</strong></li>
+</ul>
+
+<h4>On Any Broker (Fidelity, Schwab, IBKR, Robinhood)</h4>
+<ul>
+  <li>Trade ticket → Order Type: "Stop" or "Stop Limit"</li>
+  <li>Set trigger price</li>
+  <li>Duration: Day for entry, GTC for stop-loss</li>
+</ul>
+
+<div class="callout">
+  <strong>⚠ Your Stop Is a Trigger, NOT a Guaranteed Fill.</strong>
+  When price hits your stop-loss level, your order becomes a <em>market order</em>. If the stock gaps down overnight (bad earnings, negative news), your fill will be <strong>much worse</strong> than your stop price.
+  <ul>
+    <li>Example: Stop at $93.25. Overnight, company misses earnings. Stock opens at $84.00. Your fill is $84.00 — a loss of nearly 2× your planned risk.</li>
+    <li>This is why we <strong>never hold through earnings</strong> (close 3 days before).</li>
+    <li>This is why we <strong>never risk more than 0.5–1% per trade</strong> — even a bad gap should not end the account.</li>
+    <li>Position sizing assumes normal fills. Gap-through-stop days are the tax you pay for playing.</li>
+  </ul>
+  Stop-limit orders (which specify a limit price below the stop) can protect against ugly fills — but at the cost of not filling at all in a fast decline, leaving you stuck. <strong>Stop-market is safer; the occasional gap loss is the price of certainty.</strong>
+</div>
+
+<div class="callout">
+  <strong>⚠ Halal Status Check — At the Moment of the Trade.</strong>
+  A stock's halal classification can change between last week's check and today. When your entry trigger fires:
+  <ul>
+    <li><strong>Re-verify halal in Zoya (or your chosen provider) immediately before placing the order</strong> — takes 15 seconds.</li>
+    <li>If status has changed to non-compliant or under review → <strong>do not enter</strong>. Skip the trade, journal the near-miss.</li>
+    <li>If verified compliant → record the timestamp of verification in your trade card.</li>
+  </ul>
+  This is Rule Zero from the Constitution. No exceptions. A great chart on a stock that just failed Shariah screening is not a trade.
+</div>
+
+<h3>2.5 Managing the Pullback Trade</h3>
+
+<p>Each day at close (5 minutes):</p>
+<ul>
+  <li>Is unrealized P&amp;L at +2R? → <strong>Sell 1/3, move stop on remaining 2/3 to your entry price</strong></li>
+  <li>After partial sell: has price made a new higher low? → <strong>Move stop to that higher low − 0.5 × ATR</strong></li>
+  <li>If price has closed below 20 EMA → <strong>Sell rest at open tomorrow</strong></li>
+  <li>If 15 trading days have passed and you're not at +1R yet → <strong>Close at market close today</strong></li>
+  <li>Earnings coming in 3 days? → <strong>Close full position before announcement</strong></li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">3 · Deep Dive — The Donchian 20 Setup</h2>
+
+<h3>3.1 The Core Idea</h3>
+
+<blockquote>Buy when the trend proves itself by breaking to a new 20-day high.</blockquote>
+
+<p>You don't try to guess where the trend starts. You wait for undeniable evidence — price breaking above the highest high of the last 20 days. Then you ride it as long as it keeps making new highs, exiting only when price breaks the recent low (10-day). It's simpler than pullback but requires more patience through losing streaks.</p>
+
+<h3>3.2 Who to Learn It From (In Order)</h3>
+
+<h4>The Turtle Traders — Definitive DC20 Source</h4>
+<ol>
+  <li><strong>Book (essential):</strong> <em>Way of the Turtle</em> (2007), Curtis Faith
+    <ul>
+      <li>Written by an actual Turtle Trader</li>
+      <li>Covers the exact DC20 (System 1) and DC55 (System 2) rules</li>
+      <li><strong>~250 pages, arguably the best trend-following book ever written for retail</strong></li>
+      <li>Read chapters on: Turtle rules, position sizing, psychology of losing streaks</li>
+    </ul>
+  </li>
+  <li><strong>Book (context):</strong> <em>The Complete TurtleTrader</em> (2007), Michael Covel
+    <ul>
+      <li>Story of Richard Dennis / William Eckhardt and the Turtle experiment</li>
+      <li>Great motivation; not as technical as Faith's book</li>
+      <li>Read after Faith</li>
+    </ul>
+  </li>
+  <li><strong>The original Turtle Rules leak (free PDF):</strong> Search "Original Turtle Trading Rules PDF" — Curtis Faith released the exact rules for free in 2003. It's about 30 pages. <strong>Read this first, then Faith's book fills in the context.</strong></li>
+</ol>
+
+<h4>Free Video Content</h4>
+<ol start="4">
+  <li><strong>YouTube search:</strong> <code>"Curtis Faith Turtle Traders"</code> — several interviews and lectures</li>
+  <li><strong>YouTube search:</strong> <code>"Michael Covel trend following"</code> — his channel has hundreds of interviews with successful trend-followers (David Harding, Jerry Parker, Bill Dunn, Ed Seykota)</li>
+  <li><strong>Documentary:</strong> <em>Trend Following: A Documentary</em> (2013) — available on YouTube in parts, or the full doc via Covel's site. <strong>1 hour, worth every minute.</strong></li>
+</ol>
+
+<h4>Broader Trend-Following (Background)</h4>
+<ol start="7">
+  <li><strong>Book:</strong> <em>Trend Following</em> (2004, updated editions), Michael Covel
+    <ul>
+      <li>Encyclopedic treatment of trend-following</li>
+      <li>Skim it after Faith's book — you'll find the same principles applied to futures, forex, commodities</li>
+    </ul>
+  </li>
+  <li><strong>Book:</strong> <em>Trading in the Zone</em> (2000), Mark Douglas
+    <ul>
+      <li><strong>Not about DC20 specifically, but essential for the psychology.</strong> DC20 has a 30–40% win rate. Most traders quit before their edge shows up.</li>
+      <li>Read AFTER Faith.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>3.3 How to Actually Identify a DC20 Manually</h3>
+
+<p>Simpler than pullback but requires patience.</p>
+
+<h4>Step-by-Step</h4>
+<ol>
+  <li><strong>Open TradingView</strong> → daily chart</li>
+  <li><strong>Add indicators:</strong>
+    <ul>
+      <li><strong>Donchian Channels (20)</strong> — TradingView has this built-in. Add it; three lines will appear: upper (20-day high), lower (20-day low), middle</li>
+      <li><strong>Donchian Channels (10)</strong> — add a second Donchian, period 10 (this is for your exit — different color, like gray)</li>
+      <li>Volume (default)</li>
+      <li>ATR(14)</li>
+    </ul>
+  </li>
+  <li><strong>Pick a stock from your list</strong></li>
+</ol>
+
+<div class="checklist keep-together">
+  <h4>The 5-Check DC20 Filter</h4>
+
+  <p><strong>Check 1 — Halal + Universe?</strong> (Same rules as always)</p>
+
+  <p><strong>Check 2 — Market Regime + Sector?</strong></p>
+  <ul>
+    <li>Regime score ≥ 4/6 green signals</li>
+    <li>Stock in top-3 sectors</li>
+    <li><strong>DC20 does NOT trade in CHOP, HIGH_VOL, or BEAR.</strong> Confirm regime is NORMAL_BULL or STRONG_BULL.</li>
+  </ul>
+
+  <p><strong>Check 3 — Is Today's Close Above the Upper Donchian(20)?</strong></p>
+  <ul>
+    <li>Look at the Donchian upper line</li>
+    <li>Did today's closing price close above that line?</li>
+    <li>Yes → this is a breakout. Continue.</li>
+    <li>No → not a breakout today. Skip.</li>
+  </ul>
+
+  <p><strong>Check 4 — Volume Confirmation?</strong></p>
+  <ul>
+    <li>Compare today's volume to the 20-day average volume</li>
+    <li>Is today's volume ≥ 1.5× average?</li>
+    <li>Yes → institutional participation, real breakout. Continue.</li>
+    <li>No → weak breakout, skip. (This alone filters out 70% of fake breakouts.)</li>
+  </ul>
+
+  <p><strong>Check 5 — Is the Stop Tradeable?</strong></p>
+  <ul>
+    <li>Your initial stop is the lower Donchian(10) line at the time of entry</li>
+    <li>Distance from today's close to the lower Donchian(10)?</li>
+    <li>Is that distance ≤ 2 × ATR(14)?</li>
+    <li>Yes → tradeable. No → skip (too extended).</li>
+  </ul>
+
+  <p><strong>If all 5 pass → this is a DC20 candidate. Write the trade card.</strong></p>
+</div>
+
+<h3>3.4 Placing the DC20 Trade Manually</h3>
+
+<h4>Two Entry-Timing Choices (Pick ONE and Stick With It)</h4>
+
+<p><strong>Mode A — Enter at Close of Signal Day</strong></p>
+<ul>
+  <li>If checks 1–5 pass at 3:50pm ET, place a market or limit order to buy at close (3:59pm)</li>
+  <li>Slightly better fills usually, but you have 5 minutes to decide</li>
+</ul>
+
+<p><strong>Mode B — Enter at Next Day's Open (recommended for beginners, matches Turtle original)</strong></p>
+<ul>
+  <li>If checks 1–5 pass at close of day D</li>
+  <li>Place market-on-open order for D+1</li>
+  <li>Slightly worse fills but simpler execution</li>
+</ul>
+
+<h4>Stop-Loss (Place Simultaneously)</h4>
+<ul>
+  <li>Sell-stop at the current lower Donchian(10) value</li>
+  <li>Order type: <strong>Sell-Stop, GTC</strong></li>
+  <li><strong>Note:</strong> unlike PBK, your stop DOES NOT MOVE automatically. It stays at the initial 10-day low until the exit rule fires (see below).</li>
+</ul>
+
+<h3>3.5 Managing the DC20 Trade — The Key Difference From PBK</h3>
+
+<p><strong>Every day at close (2 minutes):</strong></p>
+<ul>
+  <li>Look at the lower Donchian(10) — the current 10-day low</li>
+  <li>If today's <strong>close is below the lower Donchian(10)</strong> → <strong>Sell everything at market close today or open tomorrow.</strong> This is your only exit trigger under normal conditions.</li>
+  <li>Otherwise → <strong>do nothing.</strong> Hold.</li>
+</ul>
+
+<p><strong>No time stop. No partial profits. No trailing to breakeven.</strong> DC20's power is letting winners run for weeks or months. Cutting winners short kills the edge.</p>
+
+<p><strong>Exceptions (same as PBK):</strong></p>
+<ul>
+  <li>Regime downgrades to CHOP → sell half, tighten exit to lower Donchian(5)</li>
+  <li>Halal status changes → close at next open</li>
+  <li>Earnings in 3 days → close before announcement</li>
+</ul>
+
+<div class="callout">
+  <strong>The Psychological Warning — DC20 will feel wrong 60–70% of the time.</strong>
+  <ul>
+    <li>You'll take 10 trades, 7 will lose small, 2 will break even</li>
+    <li>The 1 winner will pay for all 10 combined, plus profit — but only if you're still in the game to take it</li>
+    <li>Losing streaks of 6–8 in a row are NORMAL for DC20 and expected</li>
+    <li>Most retail traders quit at trade 8, right before the big winner</li>
+    <li>This is why Curtis Faith wrote <em>Way of the Turtle</em> — the psychology is the entire game</li>
+  </ul>
+  If you can't sit through this, PBK is better for you. Not weakness — just fit.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">4 · Structured 4-Week Learning Plan</h2>
+
+<p>Do this before placing a single trade.</p>
+
+<h3>Week 1 — Foundations + Pullback Theory</h3>
+<p><strong>Time:</strong> ~5 hours across the week</p>
+<ul>
+  <li><strong>Sunday:</strong> Read <em>Trade Like a Stock Market Wizard</em> chapters 4 &amp; 5 (Trend Template + VCP)</li>
+  <li><strong>Weekdays (30 min each):</strong> Open TradingView, pick 5 different well-known leaders (NVDA, MSFT, GOOGL, LLY, COST — check halal separately). For each: identify the current stage (1/2/3/4). Write it down.</li>
+  <li><strong>Watch:</strong> 2 Minervini interview videos on YouTube (Chat With Traders eps 133 and 165)</li>
+  <li><strong>Weekend:</strong> Read Weinstein Chapters 1–2 (skimming OK)</li>
+</ul>
+<p><strong>End of week check:</strong> Can you look at ANY chart and instantly say "Stage 1, 2, 3, or 4"? If not, more reps needed.</p>
+
+<h3>Week 2 — Pullback Practice + DC20 Theory</h3>
+<p><strong>Time:</strong> ~5 hours</p>
+<ul>
+  <li><strong>Sunday:</strong> Read the free Original Turtle Rules PDF (30 pages)</li>
+  <li><strong>Weekdays:</strong> Do the pullback 7-check on 5 stocks per day. Track which stocks pass all 7 checks (should be rare — maybe 1 of 5).</li>
+  <li><strong>Watch:</strong> <em>Trend Following</em> documentary on YouTube (1 hour)</li>
+  <li><strong>Weekend:</strong> Start <em>Way of the Turtle</em> by Curtis Faith (aim to finish by end of Week 3)</li>
+</ul>
+<p><strong>End of week check:</strong> Can you spot a valid pullback setup unassisted? Can you draw the entry, stop, and target on the chart?</p>
+
+<h3>Week 3 — DC20 Practice + Psychology</h3>
+<p><strong>Time:</strong> ~5 hours</p>
+<ul>
+  <li><strong>Sunday:</strong> Finish <em>Way of the Turtle</em> (or continue)</li>
+  <li><strong>Weekdays:</strong> Do the DC20 5-check on 5 stocks per day. Track which pass all 5.</li>
+  <li><strong>Watch:</strong> 2 Michael Covel trend-following interviews on YouTube</li>
+  <li><strong>Weekend:</strong> Read <em>Trading in the Zone</em> (Douglas) chapters 1–4 (psychology of probabilistic thinking)</li>
+</ul>
+<p><strong>End of week check:</strong> Can you calculate position size for both setups given a $200 risk budget? Can you explain WHY DC20 has no time stop?</p>
+
+<h3>Week 4 — Paper Trading Simulation (No Real Money)</h3>
+<p><strong>Time:</strong> ~7 hours</p>
+<ul>
+  <li><strong>Sunday:</strong> Run your full Sunday process. Build watchlists for BOTH setups. Write trade cards.</li>
+  <li><strong>Weekdays:</strong> Each morning, check triggers. For any trigger that fires, <strong>write down</strong> on paper:
+    <ul>
+      <li>"Would have bought X shares of ABC at $XX.XX"</li>
+      <li>"Stop at $XX.XX"</li>
+      <li>"Target for PBK: $XX.XX"</li>
+      <li>Set alerts on TradingView for exits</li>
+    </ul>
+  </li>
+  <li>Each day post-close: check if any "position" would have been managed (partial, trail update, exit). Update your paper journal.</li>
+</ul>
+<p><strong>End of week 4 check:</strong> You should have simulated 5–10 trades on paper. Some will have "triggered," some won't. Some will show losses, some wins. This is the taste before the meal.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">5 · The Manual Journal (What to Write Down)</h2>
+
+<p>Get a physical notebook. Not a spreadsheet. Physical writing forces slowness which forces thought.</p>
+
+<h3>One page per week for planning</h3>
+<ul>
+  <li>Market regime score</li>
+  <li>Top 3 sectors</li>
+  <li>Active themes</li>
+  <li>Watchlist by setup (PBK list, DC20 list)</li>
+</ul>
+
+<h3>One page per trade (or paper trade)</h3>
+
+<div class="checklist keep-together">
+<pre style="font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 10pt; line-height: 1.5; margin: 0;">
+━━━━━━━━━━━━━━━━━━━━━━
+Date:        __/__/____
+Setup:       [ ] PBK   [ ] DC20
+Ticker:      _______
+Halal:       ✓
+Sector:      _______
+Theme:       _______
+
+Entry logic (why it passes):
+_______________________
+
+Entry:       $______
+Stop:        $______
+Risk:        $200
+Shares:      ___
+Capital:     $______
+
+If PBK — First target: $______
+If DC20 — Initial exit level (10-day low): $______
+
+Expected outcome: ___ days
+━━━━━━━━━━━━━━━━━━━━━━
+
+CLOSED:      __/__/____
+Exit price:  $______
+Exit reason: _______
+R multiple:  ______
+Followed plan? Y / N
+Lesson:      _______
+━━━━━━━━━━━━━━━━━━━━━━
+</pre>
+</div>
+
+<h3>One page monthly review</h3>
+<ul>
+  <li>PBK trades: count, win rate, avg R, expectancy</li>
+  <li>DC20 trades: count, win rate, avg R, expectancy</li>
+  <li>Adherence: how often did I follow the plan exactly?</li>
+  <li>Emotional notes: how did I feel through drawdowns?</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">6 · Prioritized Reading List</h2>
+
+<p>If you read nothing else, read these in this order:</p>
+
+<h3>Absolute Must-Reads</h3>
+<ol>
+  <li><strong>Curtis Faith, <em>Way of the Turtle</em> (2007)</strong> — DC20 bible + psychology</li>
+  <li><strong>Mark Minervini, <em>Trade Like a Stock Market Wizard</em> (2013)</strong> — Pullback bible</li>
+  <li><strong>Mark Douglas, <em>Trading in the Zone</em> (2000)</strong> — how to think in probabilities (essential for DC20)</li>
+</ol>
+
+<h3>High Value</h3>
+<ol start="4">
+  <li><strong>Van Tharp, <em>Trade Your Way to Financial Freedom</em> (2007)</strong> — expectancy, position sizing, R-multiple framework</li>
+  <li><strong>The free Turtle Rules PDF</strong> — 30 pages, download it today</li>
+</ol>
+
+<h3>Optional But Useful</h3>
+<ol start="6">
+  <li><strong>William O'Neil, <em>How to Make Money in Stocks</em></strong> — Relative Strength, CANSLIM</li>
+  <li><strong>Stan Weinstein, <em>Secrets for Profiting in Bull and Bear Markets</em></strong> — Stage analysis</li>
+  <li><strong>Michael Covel, <em>Trend Following</em></strong> — broader context</li>
+</ol>
+
+<h3>Do NOT Read (Yet)</h3>
+<ul>
+  <li>Anything on options</li>
+  <li>Anything on day trading</li>
+  <li>Anything by a "guru" selling a course</li>
+  <li>Anything about "trading algorithms" or Python (that's engineering; you're learning trading)</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">7 · Free YouTube Playlist (Prioritized)</h2>
+
+<p>Search these terms, watch what surfaces:</p>
+
+<h3>Week 1–2</h3>
+<ul>
+  <li><code>"Stan Weinstein stage analysis"</code></li>
+  <li><code>"Mark Minervini VCP"</code></li>
+  <li><code>"Adam Grimes swing trading"</code> (Chat With Traders)</li>
+  <li><code>"Alexander Elder screen time"</code></li>
+</ul>
+
+<h3>Week 3</h3>
+<ul>
+  <li><code>"Curtis Faith Way of the Turtle"</code></li>
+  <li><code>"Michael Covel trend following"</code></li>
+  <li><code>"Trend Following documentary"</code> (should surface the 2013 doc)</li>
+</ul>
+
+<h3>Week 4</h3>
+<ul>
+  <li><code>"Mark Douglas Trading in the Zone"</code> (there's a full lecture on YouTube, ~4 hours, worth it)</li>
+</ul>
+
+<h3>Channels to Subscribe To</h3>
+<ul>
+  <li><strong>Trend Following with Michael Covel</strong> — huge interview library</li>
+  <li><strong>Chat With Traders</strong> — the podcast, they post to YouTube</li>
+  <li><strong>SMB Capital</strong> — some good free content on setups</li>
+  <li><strong>Adam Khoo Learn to Trade</strong> — beginner-friendly, unpretentious</li>
+</ul>
+
+<h3>Channels to Avoid</h3>
+<ul>
+  <li>Anyone promising "guaranteed returns"</li>
+  <li>Anyone with a Lamborghini in the thumbnail</li>
+  <li>Anyone selling a course as the main pitch</li>
+  <li>Most day-trading channels (different world, will confuse you)</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">8 · Your First Real Steps</h2>
+
+<h3>Today</h3>
+<ol>
+  <li>Download the free Turtle Rules PDF (search "original turtle trading rules pdf")</li>
+  <li>Order <em>Way of the Turtle</em> and <em>Trade Like a Stock Market Wizard</em> (physical or Kindle, doesn't matter)</li>
+  <li>Create a TradingView free account</li>
+  <li>Get a physical notebook</li>
+</ol>
+
+<h3>This Weekend</h3>
+<ol>
+  <li>Read the Turtle Rules PDF end to end</li>
+  <li>Do the market regime + sector ranking exercise</li>
+  <li>Pick 10 halal stocks and label each one's stage (1/2/3/4)</li>
+</ol>
+
+<h3>Next Sunday</h3>
+<ol>
+  <li>Do your first full Sunday planning session for BOTH setups</li>
+  <li>Build both watchlists</li>
+  <li>Write down trigger levels for anything close</li>
+  <li>Set price alerts in TradingView</li>
+</ol>
+
+<h3>Following Week</h3>
+<ol>
+  <li>Paper trade only. No real money. Write everything down.</li>
+  <li>Watch how many triggers actually fire.</li>
+  <li>Practice writing trade cards by hand.</li>
+</ol>
+
+<h3>Weeks 5–12</h3>
+<ol>
+  <li>Continue paper trading</li>
+  <li>Read the books alongside</li>
+  <li>Journal every simulated trade with brutal honesty</li>
+</ol>
+
+<h3>After 60 Paper Trades</h3>
+<ol>
+  <li>Sit down with the results per setup</li>
+  <li>Decide: comfortable? profitable? adherent to the plan?</li>
+  <li>Only then consider risking a small amount of real money ($5K, not $40K)</li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 class="pagebreak">9 · The Honest Truth About This Phase</h2>
+
+<blockquote>
+Most people skip the reading and the paper trading, then blow up their accounts. Not because their strategy was bad. Because they didn't yet <em>believe</em> the strategy in their bones.
+</blockquote>
+
+<p>Reading gives you the framework. Paper trading gives you the reps. Only both together give you the conviction to follow rules through a losing streak.</p>
+
+<div class="callout">
+  <strong>Budget 3 months minimum before real money.</strong> If that sounds too slow — the market will teach the same lesson faster, and much more expensively.
+</div>
+
+<p>Come back when you've read <em>Way of the Turtle</em> and completed 20 paper trades in each setup. Review the journal together, tune the approach if needed, and only then think about building the app.</p>
+
+<p><strong>The system waits for you — the market always has more opportunities next week.</strong></p>
+
+<div class="footer-note">
+  Companion documents: <em>setup-comparison-dc20-vs-pullback.md</em> ·
+  <em>03-strategy-definitions.md</em> · <em>00-master-overview.md</em>
+</div>
+
+</div>
+</body>
+</html>

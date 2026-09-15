@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swing Trading Cheat Sheet — Wall Poster</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ddd;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    color: #111;
+  }
+  .sheet {
+    width: 10.5in;
+    height: 7.75in;
+    margin: 24px auto;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    padding: 0;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto auto;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: #111;
+    color: #fff;
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header .title {
+    font-size: 14pt;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .header .sub {
+    font-size: 8pt;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #ccc;
+  }
+
+  /* Regime bar */
+  .regime {
+    background: #f7f6f2;
+    border-bottom: 2px solid #111;
+    padding: 6px 14px;
+  }
+  .regime-title {
+    font-size: 8pt;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    color: #333;
+  }
+  .regime-signals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 24px;
+    font-size: 9pt;
+    line-height: 1.35;
+  }
+  .regime-signals .sig {
+    display: flex;
+    align-items: baseline;
+  }
+  .box {
+    display: inline-block;
+    width: 8pt;
+    height: 8pt;
+    border: 1.5px solid #333;
+    margin-right: 6px;
+    flex-shrink: 0;
+    transform: translateY(1px);
+  }
+  .regime-score {
+    margin-top: 4px;
+    display: flex;
+    gap: 10px;
+    font-size: 8.5pt;
+    font-weight: 700;
+  }
+  .regime-score .band {
+    padding: 2px 8px;
+    border: 1.5px solid #111;
+    letter-spacing: 0.04em;
+  }
+  .band.green { background: #d7ecc4; }
+  .band.yellow { background: #f8ecc0; }
+  .band.red { background: #f0c8c0; }
+
+  /* Sectors + themes */
+  .sectors {
+    background: #fafafa;
+    border-bottom: 2px solid #111;
+    padding: 5px 14px;
+    display: flex;
+    gap: 24px;
+    font-size: 9pt;
+  }
+  .sectors .lbl {
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 8pt;
+    color: #333;
+    margin-right: 6px;
+  }
+  .sectors .fill {
+    border-bottom: 1px dotted #555;
+    display: inline-block;
+    min-width: 60px;
+    padding: 0 4px;
+  }
+
+  /* Two-column main */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 2px solid #111;
+  }
+  .col {
+    padding: 8px 14px 8px 14px;
+  }
+  .col.left { border-right: 2px solid #111; }
+  .col-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #111;
+    color: #fff;
+    padding: 4px 10px;
+    margin: -8px -14px 6px -14px;
+  }
+  .col-header .tag {
+    font-size: 12pt;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+  }
+  .col-header .style {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #ccc;
+  }
+  .checks {
+    padding-left: 0;
+    margin: 0 0 6px 0;
+    list-style: none;
+    counter-reset: chk;
+  }
+  .checks li {
+    counter-increment: chk;
+    padding-left: 22px;
+    position: relative;
+    margin: 3px 0;
+    font-size: 8.5pt;
+    line-height: 1.35;
+  }
+  .checks li::before {
+    content: counter(chk);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 15px;
+    height: 15px;
+    background: #111;
+    color: #fff;
+    font-size: 7.5pt;
+    font-weight: 900;
+    text-align: center;
+    line-height: 15px;
+  }
+  .checks li strong { color: #000; }
+  .checks li em { color: #555; font-style: normal; font-size: 8pt; }
+
+  .decision {
+    background: #111;
+    color: #fff;
+    padding: 4px 10px;
+    text-align: center;
+    font-size: 9pt;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    margin: 6px -14px 8px -14px;
+  }
+
+  .exit-title {
+    background: #333;
+    color: #fff;
+    padding: 3px 10px;
+    font-size: 8pt;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 -14px 4px -14px;
+  }
+  .exits {
+    margin: 0;
+    padding-left: 14px;
+    font-size: 8pt;
+    line-height: 1.4;
+  }
+  .exits li { margin: 1px 0; }
+
+  /* Sizing block */
+  .sizing {
+    background: #f7f6f2;
+    border-bottom: 2px solid #111;
+    padding: 6px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    font-size: 8.5pt;
+    line-height: 1.45;
+  }
+  .sizing .h {
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 8pt;
+    margin-bottom: 2px;
+    color: #333;
+  }
+  .sizing code {
+    background: #ececec;
+    padding: 1px 5px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 8pt;
+  }
+
+  /* Rules & morning strip */
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    border-top: 0;
+  }
+  .morning, .rules {
+    padding: 5px 14px;
+    font-size: 8.5pt;
+    line-height: 1.4;
+  }
+  .morning { border-right: 2px solid #111; background: #fafafa; }
+  .rules { background: #f7f6f2; }
+  .footer-grid .h {
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 8pt;
+    margin-bottom: 3px;
+    color: #333;
+  }
+  .rules ol {
+    margin: 0;
+    padding-left: 16px;
+    columns: 2;
+    column-gap: 18px;
+  }
+  .rules li { margin: 1px 0; break-inside: avoid; }
+  .morning ol { margin: 0; padding-left: 16px; }
+  .morning li { margin: 1px 0; }
+
+  /* Print rules */
+  @page {
+    size: letter landscape;
+    margin: 0.25in;
+  }
+  @media print {
+    html, body { background: #fff; }
+    .sheet {
+      margin: 0;
+      width: 10.5in;
+      height: 7.75in;
+      box-shadow: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title">Swing Trading Cheat Sheet</div>
+    <div class="sub">HALAL · LONG-ONLY · $40K · TWO SETUPS PARALLEL</div>
+  </div>
+
+  <!-- REGIME -->
+  <div class="regime">
+    <div class="regime-title">1 · Market Regime — Score 6 signals (need 4+ to trade full size)</div>
+    <div class="regime-signals">
+      <div class="sig"><span class="box"></span>SPY &gt; 50 MA + slope up</div>
+      <div class="sig"><span class="box"></span>QQQ &gt; 50 MA + slope up</div>
+      <div class="sig"><span class="box"></span>VIX &lt; 20</div>
+      <div class="sig"><span class="box"></span>Breadth &gt; 60% (SPXA50R)</div>
+      <div class="sig"><span class="box"></span>New highs &gt; new lows</div>
+      <div class="sig"><span class="box"></span>10y yield not spiking</div>
+    </div>
+    <div class="regime-score">
+      <span class="band green">5–6 GREEN = FULL SIZE · HUNT AGGRESSIVELY</span>
+      <span class="band yellow">3–4 = HALF SIZE · A+ SETUPS ONLY</span>
+      <span class="band red">0–2 = CASH WEEK · NO NEW ENTRIES</span>
+    </div>
+  </div>
+
+  <!-- SECTORS + THEMES -->
+  <div class="sectors">
+    <div><span class="lbl">Top 3 Sectors:</span><span class="fill">&nbsp;</span> &nbsp; <span class="fill">&nbsp;</span> &nbsp; <span class="fill">&nbsp;</span></div>
+    <div style="flex:1;"><span class="lbl">Active Themes:</span><span class="fill" style="min-width:400px;">&nbsp;</span></div>
+  </div>
+
+  <!-- TWO SETUPS -->
+  <div class="main">
+
+    <!-- PBK -->
+    <div class="col left">
+      <div class="col-header">
+        <div class="tag">[PBK] · Pullback</div>
+        <div class="style">Retracement · Stage-2 leader</div>
+      </div>
+
+      <ol class="checks">
+        <li><strong>Stage 2:</strong> Close &gt; 50 EMA &amp; 200 SMA, both sloping up, mostly above 200 SMA for 30d</li>
+        <li><strong>Structure:</strong> higher highs + higher lows over last 3 swings</li>
+        <li><strong>RS:</strong> STOCK/SPY ratio at 3-mo high &amp; sloping up (outperforming SPY 5%+)</li>
+        <li><strong>Pullback:</strong> 3–12% off recent high, ≤15d, held above 50 EMA, touched 20 or 50 EMA</li>
+        <li><strong>Volume dry-up:</strong> pullback avg vol ≤ 70% of prior 20-day avg</li>
+        <li><strong>Not extended:</strong> distance to 20 EMA ≤ 1.5 × ATR(14)</li>
+        <li><strong>Stop viable:</strong> Entry − (Pullback low − 0.5·ATR) ≤ 2 × ATR</li>
+      </ol>
+
+      <div class="decision">ALL 7 PASS → PULLBACK CANDIDATE · WRITE TRADE CARD</div>
+
+      <div class="exit-title">PBK Exit Stack (priority order)</div>
+      <ul class="exits">
+        <li>Structural stop: <code>Pullback low − 0.5·ATR</code></li>
+        <li>+2R: sell 1/3 · stop on rest → breakeven</li>
+        <li>Trail rest: <code>min(20 EMA, HL − 0.5·ATR)</code></li>
+        <li>Time stop: 15 days if unrealized R &lt; 1.0 → close</li>
+        <li>Regime → CHOP or worse: sell 1/2, tighten trail</li>
+        <li>Halal reclassified → close at next open</li>
+        <li>Earnings within 3 days → close before</li>
+      </ul>
+    </div>
+
+    <!-- DC20 -->
+    <div class="col right">
+      <div class="col-header">
+        <div class="tag">[DC20] · Donchian 20 Breakout</div>
+        <div class="style">Momentum · Turtle-style</div>
+      </div>
+
+      <ol class="checks">
+        <li><strong>Halal + Universe:</strong> passes Rule Zero, price &gt; $10, mcap &gt; $1B, ADV &gt; $20M</li>
+        <li><strong>Regime + Sector:</strong> regime ∈ {STRONG_BULL, NORMAL_BULL}; stock in top-3 sector <em>(DC20 does NOT trade CHOP / HIGH_VOL / BEAR)</em></li>
+        <li><strong>Breakout:</strong> Close(today) &gt; upper Donchian channel (20-day high)</li>
+        <li><strong>Volume:</strong> today's volume ≥ 1.5 × 20-day avg</li>
+        <li><strong>Stop viable:</strong> (Close − lower Donchian 10) ≤ 2 × ATR(14)</li>
+      </ol>
+
+      <div class="decision">ALL 5 PASS → DC20 CANDIDATE · WRITE TRADE CARD</div>
+
+      <div class="exit-title">DC20 Exit Stack (priority order)</div>
+      <ul class="exits">
+        <li>Stop: lower Donchian 10 <em>(fixed at entry)</em></li>
+        <li>Trend exit: Close &lt; lower Donchian 10 → sell all</li>
+        <li>Regime → CHOP: sell 1/2, tighten exit to DC5</li>
+        <li>Halal reclassified → close at next open</li>
+        <li>Earnings within 3 days → close before</li>
+        <li><strong>NO time stop</strong> · <strong>NO partial profit</strong> — let winners run</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- SIZING & PORTFOLIO -->
+  <div class="sizing">
+    <div>
+      <div class="h">Position Sizing (both setups)</div>
+      Risk per trade: <strong>$200 (0.5% of $40K)</strong> — max $400 (1%) after 6 mo proof<br>
+      Shares = <code>$200 ÷ (Entry − Stop)</code> &nbsp;·&nbsp; Cap: <strong>10% of account per position</strong><br>
+      Sample-size gate: <code>&lt;30 hist. setups = 0.25% · 30–100 = 0.5% · 100+ = full</code>
+    </div>
+    <div>
+      <div class="h">Portfolio Limits (across BOTH setups)</div>
+      Max <strong>6 open positions</strong> · Max <strong>2 per sector</strong> · Max <strong>1 per theme</strong><br>
+      Total open risk ≤ <strong>3% of account</strong> (~$1,200)<br>
+      No correlated stacking (ρ &gt; 0.75 with existing position = VETO)
+    </div>
+  </div>
+
+  <!-- FOOTER GRID -->
+  <div class="footer-grid">
+    <div class="morning">
+      <div class="h">Daily Morning Ritual (15 min before open)</div>
+      <ol>
+        <li>Regime unchanged overnight? Futures? VIX? — recompute score</li>
+        <li>Any candidate trigger fired? Any position violated its setup?</li>
+        <li><strong>State check:</strong> sleep ≥ 6h? · healthy? · stress OK? · focus clear? — <em>any NO = CASH DAY (mechanical exits still run)</em></li>
+        <li>If trigger fired &amp; approved → place buy-stop + sell-stop simultaneously. Then close the app.</li>
+      </ol>
+    </div>
+    <div class="rules">
+      <div class="h">Rules to Live By</div>
+      <ol>
+        <li>Halal is Rule Zero — re-verify at entry, no override</li>
+        <li>Regime first — below 3/6 = cash</li>
+        <li>Stop is a TRIGGER, not a fill — gaps fill worse</li>
+        <li>One trade card = one trade. No card = no trade</li>
+        <li>Stop only moves in your favor — never wider</li>
+        <li>No averaging down — add to winners only</li>
+        <li>No earnings holds — exit 3 days before</li>
+        <li>One theme = one bet, not four</li>
+        <li>Journal every trade — brutal honesty</li>
+        <li>Cash is a position — boredom is not a trigger</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -19,6 +19,7 @@ produces *decisions*.
 | 6 | [06-news-and-catalyst-spec.md](06-news-and-catalyst-spec.md) | How news becomes a tradeable signal instead of noise |
 | 7 | [07-risk-and-position-sizing.md](07-risk-and-position-sizing.md) | Stops, targets, R-multiples, sizing, portfolio-level guardrails |
 | 8 | [stories/README.md](stories/README.md) | The implementation backlog — epics and stories written for an autonomous coding agent |
+| 9 | [strategy/00-master-overview.md](strategy/00-master-overview.md) | **New: full re-specification of the trading system as ten phased specs (Constitution → Data → Strategy → Backtester → Research → ML → Four Engines → AI Analyst → Trade Card → Journal). Supersedes docs 05–07 as the design of record going forward.** |
 
 ## The one-sentence architecture
 
