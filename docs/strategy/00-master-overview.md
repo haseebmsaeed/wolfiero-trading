@@ -336,5 +336,7 @@ Any modification to a numbered spec requires:
 - **Trader guide — DC20 vs Pullback side-by-side** → [`setup-comparison-dc20-vs-pullback.md`](./setup-comparison-dc20-vs-pullback.md)
 - **Expected statistical behavior per setup** → [`expected-behavior.md`](./expected-behavior.md)
 - **Rule-by-rule audit table** → [`rule-audit.md`](./rule-audit.md)
+- **Source attribution — authors vs Wolfiero additions** → [`source-attribution.md`](./source-attribution.md)
+- **Final coherence check + trader green-light** → [`FINAL-CHECK.md`](./FINAL-CHECK.md)
 - **Manual trading learning guide (HTML, printable)** → [`learning-guide-manual-trading.html`](./learning-guide-manual-trading.html)
 - **Wall-mounted cheat sheet (HTML, printable)** → [`cheat-sheet-wall.html`](./cheat-sheet-wall.html)

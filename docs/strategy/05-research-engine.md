@@ -137,7 +137,7 @@ Uses Spec 07's Regime Engine, applied historically. Every trade in the backtest'
 When testing many setups × regimes × sectors × RS buckets, chance produces some false positives. Apply Bonferroni correction (or false discovery rate) when claiming statistical significance.
 
 ### 4.6 Exit Policy Comparison (from Spec 03 §5.2)
-For the primary setup, run each exit policy (E-01 through E-08) against the same trade entry set. Report per-policy expectancy, drawdown, Sharpe. Pick the winner per regime.
+For each setup (PBK and DC20 independently), run its candidate exit policies (Spec 03 §5.2) against the same trade entry set for that setup. Report per-policy expectancy, drawdown, Sharpe. Pick the winner per regime per setup — the two setups may end up with different optimal exit policies.
 
 ### 4A Ablation Testing (Does Each Filter Actually Add Value?)
 

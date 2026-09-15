@@ -4,29 +4,86 @@
 
 **Status:** Both setups are **first-class, active, and tracked independently.** Neither is "primary." Each has its own expectancy table, its own kill switch, its own trade cards, and its own P&L attribution.
 
+> **⚠ Trade Type Clarification (Non-Negotiable):**
+> Every trade described in this document is a **LONG position using cash**. That means:
+> - You BUY shares at your entry price with your own money (no margin, no borrowing)
+> - You OWN the shares while holding
+> - You SELL the shares at your exit price
+> - You profit when the exit price is HIGHER than the entry price
+> - **You never short-sell, never use options, never trade on margin.** Period.
+> Both DC20 and PBK are long-side setups. DC20 buys strength (breakout to 20-day high). PBK buys a temporary retracement within an uptrend. Different entry philosophies, same direction: LONG. Same money mechanic: cash-out to buy shares, sell shares later for cash.
+
 ---
 
 ## 1. The Two Setups at a Glance
 
-|                     | **Donchian 20 (DC20)** | **Pullback to EMA (PBK)** |
-|---------------------|-------------------------|----------------------------|
-| **Style**           | Momentum breakout | Retracement in uptrend |
-| **Entry logic**     | Buy when price closes above the highest high of the last 20 days | Buy when a Stage-2 uptrend pulls back to the 20 or 50 EMA and resumes |
-| **Origin**          | Richard Donchian (1950s) / Turtle Traders (1980s) | Weinstein / O'Neil / Minervini synthesis |
-| **Typical win rate**| 30–40% | 45–60% |
-| **Typical avg winner** | +2.5R to +4.0R | +1.5R to +2.5R |
-| **Typical avg loser** | −1.0R | −1.0R |
-| **Best market regime** | STRONG_BULL (persistent trends) | NORMAL_BULL, STRONG_BULL (trending with pullbacks) |
-| **Worst market regime** | CHOP (whipsaw death) | Sharp reversals mid-trend |
-| **Trades per stock per year** | 4–8 | 6–12 |
+> **⚠ ALL PERFORMANCE NUMBERS BELOW ARE PRIORS, NOT FACTS.** They are derived from published literature on similar setups and the general characteristics of the strategy families, NOT from testing of the specific Wolfiero-filtered variants. Actual live results may differ substantially. Treat these as *expectations for what "normal" might look like*, not as promises. See [`expected-behavior.md`](./expected-behavior.md) §1 for the discipline of comparing live results to priors.
+
+|                     | **Donchian 20 (DC20) — Wolfiero-modified** | **Pullback to EMA (PBK) — Wolfiero-formalized** |
+|---------------------|---------------------------------------------|--------------------------------------------------|
+| **Style**           | Momentum breakout with added filters | Retracement in uptrend, formalized VCP-inspired |
+| **Entry logic**     | Buy when close breaks above prior 20-day high, plus Wolfiero filters (regime, sector, volume) | Buy when Stage-2 uptrend pulls back to 20/50 EMA with volume dry-up, then resumes |
+| **Origin of core** | Richard Donchian (1950s); Turtle System 1 (Faith 2007) | General concept from Weinstein / O'Neil / Minervini; specific thresholds are Wolfiero |
+| **Origin of filters** | Classic Turtle has NO regime/sector/volume filter — these are Wolfiero additions (see Spec 03 §4A warning) | Specific thresholds (3–12%, 0.70 vol, 1.5 ATR extension, 0.5 ATR buffer) are Wolfiero heuristics, not verbatim Minervini rules |
+| **Expected win rate (PRIOR — untested)** | ~30–40% (typical for trend-following systems in literature) | ~45–60% (typical for pullback systems in literature) |
+| **Expected avg winner (PRIOR — untested)** | +2.5R to +4.0R | +1.5R to +2.5R |
+| **Expected avg loser (PRIOR — untested)** | ~−1.0R | ~−1.0R |
+| **Best market regime (hypothesis)** | STRONG_BULL (persistent trends) | NORMAL_BULL, STRONG_BULL (trending with pullbacks) |
+| **Worst market regime (hypothesis)** | CHOP (whipsaw death) | Sharp reversals mid-trend |
+| **Trades per stock per year (rough estimate)** | 4–8 | 6–12 |
 | **Entry location relative to support** | Far above (20-day high) | Near support (at 20/50 EMA) |
 | **Stop distance** | Wide (10-day low, often 8–12%) | Tight (below pullback low + 0.5 ATR, often 4–7%) |
 | **Position size (same $risk)** | Smaller (wide stop) | Larger (tight stop) |
-| **R:R per trade** | Lower (2:1 typical) | Higher (2.5–3:1 typical) |
-| **Psychological difficulty** | HIGH (long losing streaks) | MODERATE (drawdowns still real) |
-| **Time to first exit** | Median ~15–30 days | Median ~8–15 days |
+| **R:R per trade (target)** | Lower (2:1 typical) | Higher (2.5–3:1 typical) |
+| **Psychological difficulty (subjective)** | HIGH (long losing streaks expected) | MODERATE (drawdowns still real) |
+| **Time to first exit (rough estimate)** | Median ~15–30 days | Median ~8–15 days |
 | **Halal compatible** | ✓ Yes (setup-neutral) | ✓ Yes (setup-neutral) |
 | **Notification tag** | `[DC20]` | `[PBK]` |
+
+---
+
+## 1A. Classic Rules vs Wolfiero-Modified Rules
+
+**We are NOT trading the classic versions of these setups.** We are trading Wolfiero-modified variants that add several filters on top of the classical cores. This distinction matters — attributing our filtered variants' behavior to the classic authors would be dishonest.
+
+### DC20 — What's Classic Turtle vs What's Wolfiero-Added
+
+| Rule | Classic Turtle System 1 (Faith 2007) | Wolfiero-Modified DC20 |
+|------|--------------------------------------|-------------------------|
+| Buy signal | Close breaks 20-day high | Close breaks 20-day high **AND** the added filters below |
+| Halal screen | (not applicable — Turtles traded futures) | ✓ ADDED (Rule Zero) |
+| Regime gate | None — Turtles took every breakout | ✓ ADDED (STRONG_BULL / NORMAL_BULL only) |
+| Sector filter | None | ✓ ADDED (top-3 sectors) |
+| Volume filter | None | ✓ ADDED (≥ 1.5× 20d avg) |
+| ATR sanity | None | ✓ ADDED (0.5–2.0× 60d median) |
+| Stop viability | Turtles had 2% N-based position size | ✓ ADDED (stop ≤ 2 × ATR check) |
+| Earnings blackout | (not applicable) | ✓ ADDED (close 3 days before) |
+| Exit signal | Close breaks 10-day low | ✓ SAME (with regime tightening added) |
+| Time stop | None (letting winners run) | ✓ SAME (no time stop) |
+| Partial profits | None | ✓ SAME (no partials) |
+
+**Implication:** the Wolfiero-DC20 is more selective than classic Turtle. It will produce fewer trades. Whether the added filters improve expectancy or over-filter and destroy edge is a research question — see Spec 05 §4A ablation testing.
+
+### PBK — What's from the Authors vs What's Wolfiero-Formalized
+
+| Rule | Author-Provided | Wolfiero-Formalized |
+|------|-----------------|---------------------|
+| Stage 2 concept | ✓ Weinstein 1988 (qualitative) | Precise mathematical definition (5 conditions, anti-flip-flop) |
+| Relative strength | ✓ O'Neil CANSLIM | Specific 63-day + 5% outperformance thresholds |
+| VCP / controlled pullback concept | ✓ Minervini 2013 (qualitative) | Specific 3–12% band, 1.0–3.5 ATR, 15-day lookback, ≤ 7 down days |
+| Volume dry-up concept | ✓ Minervini 2013 (qualitative) | Specific ≤ 0.70 ratio threshold |
+| Entry trigger | Various authors describe "reclaim of prior high" | Specific buy-stop @ High(D-1) + $0.05 with 1.25× vol confirmation |
+| Structural stop | ✓ Weinstein / Minervini concept | Specific Pullback low − 0.5 × ATR formula |
+| Position size | ✓ Van Tharp risk-of-ruin | Standard formula |
+| Halal screen | Not from any trading author | ✓ WOLFIERO — Constitution Rule Zero |
+| Regime gate | Not from any pullback author | ✓ WOLFIERO — added |
+| +2R partial | Common trader convention | ✓ WOLFIERO default (research question — Spec 05 will validate) |
+| 15-day time stop | Not from any pullback author | ✓ WOLFIERO — added |
+| Earnings blackout | Common trader convention | ✓ WOLFIERO — added |
+
+**Implication:** while the *inspiration* comes from established authors, the specific tradeable rules are Wolfiero's formalization. Do not attribute the exact numerical thresholds to Weinstein, O'Neil, or Minervini — they are our extensions.
+
+**For complete attribution rigor:** see [`source-attribution.md`](./source-attribution.md).
 
 ---
 

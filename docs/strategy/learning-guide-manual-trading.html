@@ -217,6 +217,19 @@
   <strong>Timeline:</strong> 3–4 weeks to genuinely understand both setups. Then start paper trading. No real money for 3+ months. This is not optional — it is the cheapest tuition you will ever pay.
 </div>
 
+<div class="callout">
+  <strong>What Kind of Trading This Is (Read Once, Never Forget):</strong>
+  <ul>
+    <li><strong>Long-only, cash-based:</strong> you use your own money to BUY shares, then later SELL them for cash. You own the stock while you hold it.</li>
+    <li><strong>NO short selling</strong> (ever). We do not bet on stocks going down.</li>
+    <li><strong>NO margin / NO borrowing.</strong> You never trade with money you don't have. Cash account only.</li>
+    <li><strong>NO options.</strong> No calls, no puts, no spreads, no leverage. Shares only.</li>
+    <li><strong>You profit when the stock you own goes UP</strong> from your entry price to your exit price. That is the ONLY way to make money in this system.</li>
+    <li><strong>"Buy low, sell high" — a note on interpretation:</strong> both setups here are long-side trades where the goal is to exit higher than you entered. But note that "low" doesn't mean "at the absolute bottom." DC20 buys at a 20-day HIGH (buying strength that has proven itself). PBK buys pullbacks in stocks that are already trending up (buying a temporary dip within an uptrend). Both are LONG. Both aim to sell higher. Neither is "shorting" or "betting against."</li>
+  </ul>
+  <em>If any part of the manual method below sounds like shorting, margin, or options — you are misreading. Come back and re-read this box.</em>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════ -->
 <h2 class="pagebreak">1 · Foundational Concepts You Need First</h2>
 
@@ -568,9 +581,10 @@
   <ul>
     <li>Compare today's volume to the 20-day average volume</li>
     <li>Is today's volume ≥ 1.5× average?</li>
-    <li>Yes → institutional participation, real breakout. Continue.</li>
-    <li>No → weak breakout, skip. (This alone filters out 70% of fake breakouts.)</li>
+    <li>Yes → likely institutional participation. Continue.</li>
+    <li>No → weak breakout. Skip.</li>
   </ul>
+  <p><em>Note: the intuition is that volume-less breakouts often fail. This is a Wolfiero-added filter (NOT part of classic Turtle DC20). Whether it actually improves out-of-sample expectancy is a research question — see Spec 05 §4A ablation testing. Do not treat the "1.5× volume filters out fake breakouts" claim as an established fact.</em></p>
 
   <p><strong>Check 5 — Is the Stop Tradeable?</strong></p>
   <ul>
@@ -626,15 +640,15 @@
 </ul>
 
 <div class="callout">
-  <strong>The Psychological Warning — DC20 will feel wrong 60–70% of the time.</strong>
+  <strong>The Psychological Warning — DC20 is a low-win-rate, fat-tail system.</strong>
   <ul>
-    <li>You'll take 10 trades, 7 will lose small, 2 will break even</li>
-    <li>The 1 winner will pay for all 10 combined, plus profit — but only if you're still in the game to take it</li>
-    <li>Losing streaks of 6–8 in a row are NORMAL for DC20 and expected</li>
-    <li>Most retail traders quit at trade 8, right before the big winner</li>
-    <li>This is why Curtis Faith wrote <em>Way of the Turtle</em> — the psychology is the entire game</li>
+    <li>Trend-following systems historically show ~30–40% win rates with rare, large winners. <em>This is a documented pattern across many trend-following backtests, but the exact figures for OUR filtered Wolfiero-DC20 on halal US equities are unknown until we test — treat any specific number here as a prior, not a guarantee.</em></li>
+    <li>Long losing streaks are structural to trend-following (not a bug). Curtis Faith documents multi-trade losing streaks even for successful Turtles.</li>
+    <li>Most retail traders abandon trend-following during losing streaks, before the fat-tail winners materialize.</li>
+    <li>This is why Curtis Faith wrote <em>Way of the Turtle</em> — the psychology is the entire game.</li>
+    <li><strong>See <code>expected-behavior.md</code> for expected ranges (labeled as priors, not facts).</strong></li>
   </ul>
-  If you can't sit through this, PBK is better for you. Not weakness — just fit.
+  If sitting through 6+ consecutive losers sounds intolerable to you, PBK's higher-win-rate profile may fit you better. Not weakness — just style fit.
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->

@@ -111,9 +111,10 @@ The Research Engine (Spec 05) reports the sample size of historical similar setu
 These thresholds are configurable research parameters, not permanent truths. They are re-validated quarterly.
 
 ### 4.3 Portfolio-Level Risk Ceiling
-- **Maximum total open risk:** 2–3% of account (sum of per-trade risks across all open positions)
-- **Maximum simultaneous positions:** 6
-- **Maximum correlated exposure:** no more than 2 positions in the same sector, no more than 1 position per active theme
+- **Maximum total open risk (HARD CAP):** 3% of account (sum of per-trade risks across all open positions)
+- **Target open risk during learning phase (first 6 months live):** 2% of account
+- **Maximum simultaneous positions:** 6 (total across BOTH setups — not 6 per setup)
+- **Maximum correlated exposure:** no more than 2 positions in the same sector, no more than 1 position per trader-annotated theme (themes are trader overlay per Spec 03 §3.8, not algorithmic)
 
 ### 4.4 Stop Loss Discipline
 - Every position enters with a pre-defined stop

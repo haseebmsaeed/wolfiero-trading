@@ -115,7 +115,7 @@ A stock has strong relative strength on date D if:
 
 ### 3.3 Pullback (Controlled Retracement)
 
-**Source:** Combination of Minervini VCP concept (*Trade Like a Stock Market Wizard*, Chapter 5) and our own structural definition.
+**Conceptual source:** the *general idea* of a "controlled pullback" comes from Minervini's VCP (*Trade Like a Stock Market Wizard*, Chapter 5) and Weinstein's Stage-2 pullback discussions. **The specific numerical thresholds below are Wolfiero proposed heuristics, not verbatim rules from any author.** Minervini describes the pattern qualitatively; the concrete 3–12% band, 15-day lookback, ATR ratios, and down-day cap are our formalization for algorithmic execution. See [`source-attribution.md`](./source-attribution.md) for a rigorous separation.
 
 A pullback exists on date D if:
 - Stock made a swing high `H` within the last 15 trading days
@@ -135,13 +135,13 @@ A pullback exists on date D if:
 
 ### 3.4 Volume Dry-Up
 
-**Source:** Minervini VCP volume signature (*Trade Like a Stock Market Wizard*, Chapter 5).
+**Conceptual source:** Minervini describes volume contraction as a signature of the VCP pattern (*Trade Like a Stock Market Wizard*, Chapter 5) — that volume "quiets down" during accumulation. **The specific 0.70 ratio threshold is a Wolfiero proposed heuristic**, not a Minervini rule. Minervini does not publish a specific numeric threshold for volume contraction; he describes it qualitatively.
 
 Volume contracted during pullback if:
 - `avg_volume(pullback_days) / avg_volume(prior 20 days pre-pullback) ≤ 0.70`
 
 **Configurable parameters:**
-- `volume.contraction_ratio_max` = 0.70 [PROVISIONAL — Minervini VCP heuristic]
+- `volume.contraction_ratio_max` = 0.70 [PROVISIONAL — Wolfiero heuristic inspired by Minervini's qualitative VCP volume signature]
 
 ### 3.5 Support Zone
 
@@ -302,6 +302,21 @@ if capital_used > 0.10 × account:
 
 ## 4A. Setup 2 — `DONCHIAN_20_BREAKOUT` (`DC20`) — Full Definition
 
+> ### ⚠ IMPORTANT — Classic Turtle vs Wolfiero-Modified DC20
+>
+> The **classic Turtle System 1** consists of only these rules: buy on new 20-day high, exit on new 10-day low. **That is it.** No volume filter, no regime filter, no sector filter, no ATR viability, no halal screen, no earnings blackout.
+>
+> The **Wolfiero DC20** below adds several filters on top of the classic Turtle core:
+> - **Halal Rule Zero** (required by Constitution — non-Turtle)
+> - **Market regime gate** (STRONG_BULL / NORMAL_BULL only — Wolfiero-added)
+> - **Top-3 sector requirement** (Wolfiero-added)
+> - **Volume ≥ 1.5× average confirmation** (Wolfiero-added)
+> - **ATR volatility sanity** (Wolfiero-added)
+> - **Stop viability check** (Wolfiero-added)
+> - **Earnings blackout** (Wolfiero-added — see §4A tension in [`rule-audit.md`](./rule-audit.md) §4.1)
+>
+> These additions are **PROPOSED MODIFICATIONS**, not part of the historically-tested Turtle System 1. Whether they improve the setup or over-filter it is a research question — see Spec 05 §4A ablation testing. Do not attribute these filters to Curtis Faith or the Turtle program. See [`source-attribution.md`](./source-attribution.md) for a rigorous separation.
+
 ### 4A.0 Building Blocks Specific to DC20
 
 **Donchian channels (20-day and 10-day):**
@@ -309,6 +324,8 @@ if capital_used > 0.10 × account:
 DC_upper(N, D) = MAX(High(D-1), High(D-2), ..., High(D-N))
 DC_lower(N, D) = MIN(Low(D-1),  Low(D-2),  ..., Low(D-N))
 ```
+
+**Note on TradingView reference:** TradingView's default Donchian Channels indicator uses this exact convention (the upper band is the highest high of the previous N completed bars, excluding the current bar). Our implementation must match this. If a chart platform's indicator INCLUDES today's bar in the reference, that is a different indicator and will produce different signals.
 
 **Source:** Richard Donchian, published 1950s; popularized by the Turtle Trader program (Richard Dennis, William Eckhardt, 1983–1988). Documented in Curtis Faith's *Way of the Turtle* (2007), Michael Covel's *The Complete TurtleTrader* (2007), and Faith's original Turtle rules leak (2003).
 
@@ -573,10 +590,10 @@ Every parameter must show that performance is not brittle: nudging the parameter
 - Coverage ≥ 95% on the primitives module
 - No primitive reads config or has side effects
 
-### Story 3.2 — Primary Setup Detector
+### Story 3.2 — PBK Setup Detector
 **As:** the runtime
 **I want:** a `detect_pullback_stage2(stock, date)` function that returns `SetupCandidate | None`
-**So that:** the pipeline can enumerate candidates cleanly
+**So that:** the pipeline can enumerate PBK candidates independently of DC20
 
 **Acceptance criteria:**
 - Applies all conditions in §4.1
@@ -734,7 +751,7 @@ Every parameter must show that performance is not brittle: nudging the parameter
 
 ## 10. Open Questions for the Trader
 
-1. **Sole primary setup:** confirm `PULLBACK_TO_EMA_STAGE2` is the sole Phase 1 setup, or should we also start with a `BASE_BREAKOUT` variant in parallel?
+1. **Two parallel setups confirmed:** PBK and DC20 are both Phase-1 active setups per current spec. When (if ever) do we add a third setup (candidate: `FLAT_BASE_BREAKOUT`)? Suggested trigger: 6+ months of positive live expectancy on both existing setups.
 2. **Support tier order:** in §3.5, the order is 20 EMA → 50 EMA → pivot. Should pivots be first (structural)?
 3. **RS outperformance threshold:** 5% is O'Neil's approximate — should we test 3%, 5%, 7% ranges as robustness (not overfitting)?
 4. **Time stop:** 15 trading days is ~3 weeks. Comfortable, or too long?
